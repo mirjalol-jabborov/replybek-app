@@ -16,6 +16,7 @@ const nextMonth = () => {
 import { useModal, Confirm } from "./components/overlay.jsx";
 import { limitMessage, setPaymentRequiredHandler, trialMessage } from "./api.js";
 import { Loading } from "./pages/shared.jsx";
+import { supportChat, openSupportChat } from "./support.js";
 import { AuthPage } from "./pages/auth.jsx";
 import { Overview } from "./pages/overview.jsx";
 import { Agents, CreateAgentDialog } from "./pages/agents.jsx";
@@ -276,6 +277,11 @@ function Sidebar({ page, onNavigate, collapsed, onToggle }) {
 }
 
 function HelpDialog({ onClose }) {
+  // Our own support chat, once it has loaded (app.replybek.uz only).
+  const [chat, setChat] = useState(() => supportChat());
+  useEffect(() => {
+    if (!chat) supportChat(() => setChat(true));
+  }, [chat]);
   const steps = [
     [t("Create an agent"), t("Name it and describe what it should help with."), () => go("agents")],
     [t("Add knowledge"), t("Websites, files and Q&A. The agent answers only from these."), () => go("knowledge")],
@@ -325,6 +331,21 @@ function HelpDialog({ onClose }) {
           <Icon name="arrowRight" size={14} />
         </a>
       </div>
+      {chat && (
+        <div className="row" style={{ gap: 12, justifyContent: "space-between", flexWrap: "wrap", padding: "12px", borderRadius: 10, background: "var(--surface-muted)" }}>
+          <span className="helper" style={{ flex: "1 1 220px" }}>{t("Have a question? Ask our AI agent, or a person from our team.")}</span>
+          <Button
+            size="sm"
+            variant="primary"
+            onClick={() => {
+              onClose();
+              setTimeout(openSupportChat, 50);
+            }}
+          >
+            {t("Chat with us")}
+          </Button>
+        </div>
+      )}
       <p className="helper">{t("Esc closes menus and dialogs. Enter sends a message; Shift+Enter adds a new line.")}</p>
     </Dialog>
   );

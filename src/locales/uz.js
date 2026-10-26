@@ -632,6 +632,8 @@ export default {
   "Welcome back.": "Qaytganingizdan xursandmiz.",
   "At least 10 characters.": "Kamida 10 ta belgi.",
   "Create workspace": "Ish maydonini yaratish",
+  "Have a question? Ask our AI agent, or a person from our team.": "Savolingiz bormi? AI agentimizdan yoki jamoamizdan soʻrang.",
+  "Chat with us": "Bizga yozing",
   "Step-by-step guides for every feature, with short videos.": "Har bir imkoniyat uchun qisqa videoli bosqichma-bosqich qoʻllanmalar.",
   "Open the guides": "Qoʻllanmalarni ochish",
   "By creating a workspace, you accept: {terms} and {privacy}.": "Ish maydonini yaratib, siz quyidagilarni qabul qilasiz: {terms} va {privacy}.",
