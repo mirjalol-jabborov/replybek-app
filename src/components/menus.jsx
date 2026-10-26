@@ -365,7 +365,7 @@ function MenuPanel({ id, anchorRef, items, label, placement, minWidth, header, o
     }
   };
   return (
-    <Popover ref={ref} anchorRef={anchorRef} onClose={onClose} placement={placement} matchWidth={false} minWidth={minWidth} maxHeight={420} id={id} role="menu" aria-label={label} onKeyDown={onKeyDown}>
+    <Popover ref={ref} anchorRef={anchorRef} onClose={onClose} placement={placement} matchWidth={false} minWidth={minWidth} maxHeight={720} id={id} role="menu" aria-label={label} onKeyDown={onKeyDown}>
       {header && (
         <>
           <div className="pop-head">{header}</div>

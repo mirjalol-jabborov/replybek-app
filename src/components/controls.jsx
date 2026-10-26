@@ -31,7 +31,7 @@ export const describedBy = (id, hint, error) => [error && id + "-err", hint && i
 export function Field({ id, label, hint, error, optional, layout = "stack", children, tight }) {
   const labelEl = (
     <label className="field-label" htmlFor={id} id={id + "-label"}>
-      {label} {optional && <span className="opt">{t("(optional)")}</span>}
+      {label} {optional && <span className="field-opt">{t("(optional)")}</span>}
     </label>
   );
   const err = error && (
@@ -273,10 +273,11 @@ export function StatusBadge({ status, label }) {
   );
 }
 
-export function Avatar({ initials, tone = "", size = "", square, title }) {
+/** Initials on a tone, or an image when `src` is set: a logo (fitted) or, with `cover`, a person's photo. */
+export function Avatar({ initials, tone = "", size = "", square, title, src, cover }) {
   return (
-    <span className={`avatar ${tone} ${size} ${square ? "sq" : ""}`} aria-hidden={title ? undefined : "true"} title={title}>
-      {initials}
+    <span className={`avatar ${src ? "has-img" : tone} ${src && cover ? "cover" : ""} ${size} ${square ? "sq" : ""}`} aria-hidden={title ? undefined : "true"} title={title}>
+      {src ? <img src={src} alt="" /> : initials}
     </span>
   );
 }

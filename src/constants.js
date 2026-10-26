@@ -17,6 +17,7 @@ export const TIMEZONES = [
   ["Europe/Stockholm", "Stockholm", "UTC+1"],
   ["Africa/Johannesburg", "Johannesburg", "UTC+2"],
   ["Asia/Dubai", "Dubai", "UTC+4"],
+  ["Asia/Tashkent", "Tashkent", "UTC+5"],
   ["Asia/Kolkata", "India", "UTC+5:30"],
   ["Asia/Singapore", "Singapore", "UTC+8"],
   ["Asia/Tokyo", "Tokyo", "UTC+9"],
@@ -24,10 +25,10 @@ export const TIMEZONES = [
   ["Pacific/Auckland", "Auckland", "UTC+12"],
 ];
 
-export const ACCENTS = ["#1f3d36", "#1d4ed8", "#9a3412", "#7c2d12", "#334155", "#0f766e", "#3f6212", "#be123c"];
+export const ACCENTS = ["#111215", "#1f3d36", "#2d5bd2", "#a63d17", "#334155", "#0f766e", "#3f6212", "#be123c"];
 
 export const PLANS = [
   { id: "starter", name: "Starter", price: 29, features: [tk("1 agent"), tk("2,000 AI messages / month"), tk("2 team seats"), tk("10 knowledge sources"), tk("Replybek branding on the widget")] },
   { id: "growth", name: "Growth", price: 79, features: [tk("5 agents"), tk("10,000 AI messages / month"), tk("5 team seats"), tk("50 knowledge sources"), tk("Remove widget branding")] },
-  { id: "business", name: "Business", price: 199, features: [tk("20 agents"), tk("50,000 AI messages / month"), tk("15 team seats"), tk("250 knowledge sources"), tk("Priority support")] },
+  { id: "business", name: "Business", price: 399, features: [tk("20 agents"), tk("50,000 AI messages / month"), tk("15 team seats"), tk("250 knowledge sources"), tk("Priority support")] },
 ];

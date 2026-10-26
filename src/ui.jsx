@@ -27,6 +27,8 @@ export function shortAge(x) {
   return t("{n}d", { n: Math.floor(h / 24) });
 }
 export const clock = (x) => new Date(ms(x)).toLocaleTimeString(locale(), { hour: "numeric", minute: "2-digit" });
+/** Whole days left until `x`, counting a part day as one (never below 1 while it's in the future). */
+export const trialDaysLeft = (x) => Math.max(1, Math.ceil((ms(x) - Date.now()) / 86400000));
 export const dateLong = (x) => new Date(ms(x)).toLocaleDateString(locale(), { month: "short", day: "numeric", year: "numeric" });
 export const initialsOf = (name = "") =>
   name

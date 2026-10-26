@@ -12,7 +12,7 @@ export function AgentSelect({ value, onChange, allowAll, id, size = "md", prefix
       label: a.name,
       group: allowAll ? undefined : a.status === "active" ? t("Published") : t("Drafts"),
       description: `${a.status === "active" ? t("Published") : t("Draft")} · ${t("{count} sources", { count: a.source_count ?? 0 })}`,
-      lead: <Avatar initials={initialsOf(a.name)} tone={toneOf(a.id)} size="xs" square />,
+      lead: <Avatar initials={initialsOf(a.name)} tone={toneOf(a.id)} src={a.widget?.logo || undefined} size="xs" square />,
     })),
   ];
   return (

@@ -15,6 +15,19 @@ const LOCALES = { en: "en-US", uz: "uz-Latn-UZ", ru: "ru-RU" };
 const KEY = "replybek.lang";
 
 function detect() {
+  // replybek.uz's Uzbek and Russian pages link here with ?lang=…: that language, from then on.
+  const params = new URLSearchParams(window.location.search);
+  const asked = params.get("lang");
+  if (DICTS[asked]) {
+    try {
+      localStorage.setItem(KEY, asked);
+    } catch {
+      // Still used for this visit.
+    }
+    params.delete("lang");
+    window.history.replaceState(null, "", window.location.pathname + (params.size ? `?${params}` : "") + window.location.hash);
+    return asked;
+  }
   try {
     const saved = localStorage.getItem(KEY);
     if (DICTS[saved]) return saved;

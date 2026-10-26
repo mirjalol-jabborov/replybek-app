@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { t, tk, locale } from "../i18n.js";
 import { Icon } from "../icons.jsx";
-import { api } from "../api.js";
+import { api, apiUrl } from "../api.js";
 import { useWorkspace } from "../workspace.jsx";
 import { useResource, go } from "../hooks.js";
 import { Avatar, StatusBadge, Drawer, EmptyState, Sim, Button, IconButton, TextInput, Tabs, tabPanel, Select, ActionMenu, shortAge, clock, useToast, initialsOf, toneOf } from "../ui.jsx";
@@ -17,6 +17,39 @@ const VIEWS = [
 const wide = () => window.matchMedia("(min-width: 1261px)").matches;
 const firstName = (n = "") => n.split(" ")[0];
 const visitorName = (c) => c.visitor?.name || t("Website visitor");
+
+// Files in messages: photos show inline, documents download. Up to 10 MB; the server checks the bytes.
+const MAX_FILE = 10 * 1024 * 1024;
+const ACCEPT = "image/jpeg,image/png,image/webp,image/gif,application/pdf,.pdf,.txt,.csv,.docx,.xlsx";
+const okFile = (f) => /^image\/(jpeg|png|webp|gif)$/.test(f.type) || /\.(jpe?g|png|webp|gif|pdf|txt|csv|docx|xlsx)$/i.test(f.name);
+const sizeText = (n) => (n < 1024 * 1024 ? t("{n} KB", { n: Math.max(1, Math.round(n / 1024)) }) : t("{n} MB", { n: (n / 1048576).toFixed(1) }));
+
+function Attachments({ files }) {
+  const { base } = useWorkspace();
+  if (!files?.length) return null;
+  return (
+    <div className="tfiles">
+      {files.map((a) => {
+        const href = apiUrl(`${base}/files/${a.id}`);
+        return a.type.startsWith("image/") ? (
+          <a key={a.id} className="tfile-img" href={href} target="_blank" rel="noopener noreferrer" aria-label={t("Open {name}", { name: a.name })}>
+            <img src={href} alt={a.name} loading="lazy" />
+          </a>
+        ) : (
+          <a key={a.id} className="tfile-doc" href={href} download={a.name}>
+            <span className="tfile-ic">
+              <Icon name="file" size={16} />
+            </span>
+            <span className="tfile-name">
+              <b>{a.name}</b>
+              <small>{sizeText(a.size)}</small>
+            </span>
+          </a>
+        );
+      })}
+    </div>
+  );
+}
 
 /** Sources open/closed under an AI message. */
 function SourcesUsed({ sources }) {
@@ -71,7 +104,7 @@ function ConversationRow({ c, selected, me }) {
           <span className="ib-time">{shortAge(c.last_message_at)}</span>
         </span>
         <span className="ib-prev truncate" style={{ display: "block" }}>
-          {last ? `${who}${last.body}` : t("No messages yet")}
+          {last ? `${who}${last.body || (last.files ? t("Sent a file") : "")}` : t("No messages yet")}
         </span>
         <span className="ib-foot">
           <StatusBadge status={c.status} />
@@ -136,6 +169,7 @@ function Transcript({ c, onHideSummary, showSummary }) {
                   <span>{clock(m.created_at)}</span>
                 </div>
                 {m.body}
+                <Attachments files={m.attachments} />
               </div>
             );
           const cls = m.role === "visitor" ? "customer" : m.role;
@@ -150,7 +184,8 @@ function Transcript({ c, onHideSummary, showSummary }) {
                   {m.role === "ai" && m.kind === "fallback" && <span>{t("· fallback")}</span>}
                 </div>
               )}
-              <div className="tbody">{m.body}</div>
+              {m.body && <div className="tbody">{m.body}</div>}
+              <Attachments files={m.attachments} />
               {m.role === "ai" && <SourcesUsed sources={m.sources} />}
             </div>
           );
@@ -195,13 +230,24 @@ function Composer({ c, me, forceNote, onCancelNote, act }) {
   const canReply = c.status === "human" && c.assignee_id === me;
   const [mode, setMode] = useState(canReply && !forceNote ? "reply" : "note");
   const [text, setText] = useState("");
+  const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
   const ref = useRef(null);
+  const picker = useRef(null);
+  const toast = useToast();
+  const choose = (f) => {
+    if (!f) return;
+    if (!okFile(f)) return toast(t("Send a photo, a PDF or a document (TXT, CSV, DOCX, XLSX)."), { tone: "error" });
+    if (f.size > MAX_FILE) return toast(t("Files can be up to 10 MB."), { tone: "error" });
+    setFile(f);
+    ref.current && ref.current.focus();
+  };
   useEffect(() => {
     setMode(canReply && !forceNote ? "reply" : "note");
   }, [c.id, canReply]);
   useEffect(() => {
     setText("");
+    setFile(null);
   }, [c.id]);
   useEffect(() => {
     ref.current && ref.current.focus();
@@ -209,12 +255,19 @@ function Composer({ c, me, forceNote, onCancelNote, act }) {
   const note = mode === "note";
   const submit = async () => {
     const body = text.trim();
-    if (!body || busy) return;
+    if ((!body && !file) || busy) return;
     setBusy(true);
-    const ok = await act(note ? "note" : "reply", { text: body }, note ? t("Note added") : null);
+    let payload = { text: body };
+    if (file) {
+      payload = new FormData();
+      payload.append("text", body);
+      payload.append("file", file, file.name);
+    }
+    const ok = await act(note ? "note" : "reply", payload, note ? t("Note added") : null);
     setBusy(false);
     if (ok) {
       setText("");
+      setFile(null);
       if (note && !canReply) onCancelNote && onCancelNote();
     }
   };
@@ -247,6 +300,13 @@ function Composer({ c, me, forceNote, onCancelNote, act }) {
           placeholder={note ? t("Write a note for your team…") : t("Reply to {name}…", { name: firstName(visitorName(c)) })}
           value={text}
           onChange={(e) => setText(e.target.value)}
+          onPaste={(e) => {
+            const f = e.clipboardData?.files?.[0];
+            if (f) {
+              e.preventDefault();
+              choose(f);
+            }
+          }}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
@@ -254,14 +314,33 @@ function Composer({ c, me, forceNote, onCancelNote, act }) {
             }
           }}
         />
+        {file && (
+          <div className="comp-file">
+            <Icon name="file" size={14} />
+            <span className="truncate">{file.name}</span>
+            <span className="helper">{sizeText(file.size)}</span>
+            <IconButton icon="x" size="sm" label={t("Remove file")} onClick={() => setFile(null)} />
+          </div>
+        )}
         <div className="comp-foot">
+          <input
+            ref={picker}
+            type="file"
+            accept={ACCEPT}
+            hidden
+            onChange={(e) => {
+              choose(e.target.files[0]);
+              e.target.value = "";
+            }}
+          />
+          <IconButton icon="clip" size="sm" label={t("Attach a file")} onClick={() => picker.current.click()} />
           <span className="helper">{note ? t("Enter to add · Shift+Enter for a new line") : t("Sent to the visitor's chat · Enter to send")}</span>
           {!canReply && (
             <Button size="sm" variant="ghost" onClick={onCancelNote}>
               {t("Cancel")}
             </Button>
           )}
-          <Button size="sm" variant="primary" type="submit" disabled={!text.trim()} loading={busy}>
+          <Button size="sm" variant="primary" type="submit" disabled={!text.trim() && !file} loading={busy}>
             {note ? t("Add note") : t("Send reply")}
           </Button>
         </div>
@@ -378,7 +457,7 @@ function Details({ c, me, act }) {
           label={t("Assignee")}
           value={c.assignee_id || ""}
           onChange={(v) => act("assign", { user_id: v || null }, v ? t("Assigned to {name}", { name: members.find((m) => m.id === v)?.name }) : t("Conversation unassigned"))}
-          options={[{ value: "", label: t("Unassigned"), icon: "user" }, ...members.map((m) => ({ value: m.id, label: m.id === me ? `${m.name} (you)` : m.name, lead: <Avatar initials={initialsOf(m.name)} tone={toneOf(m.id)} size="xs" /> }))]}
+          options={[{ value: "", label: t("Unassigned"), icon: "user" }, ...members.map((m) => ({ value: m.id, label: m.id === me ? `${m.name} (you)` : m.name, lead: <Avatar initials={initialsOf(m.name)} tone={toneOf(m.id)} size="xs" src={m.avatar || undefined} cover /> }))]}
           size="sm"
         />
       </div>
@@ -425,8 +504,8 @@ export function Inbox({ id }) {
   }, [query]);
 
   const params = new URLSearchParams({ view: "all", ...(agentFilter !== "all" ? { agent: agentFilter } : {}), ...(q ? { q } : {}) });
-  const list = useResource(`${base}/conversations?${params}`, { poll: 5000 });
-  const conv = useResource(id ? `${base}/conversations/${id}` : null, { poll: 4000 });
+  const list = useResource(`${base}/conversations?${params}`, { poll: 5000, live: true });
+  const conv = useResource(id ? `${base}/conversations/${id}` : null, { poll: 4000, live: (e) => e.c?.includes(id) });
   const all = list.data || [];
   const counts = Object.fromEntries(VIEWS.map((v) => [v.value, all.filter((c) => v.test(c, me)).length]));
   const rows = all.filter((c) => VIEWS.find((v) => v.value === view).test(c, me));
@@ -447,7 +526,7 @@ export function Inbox({ id }) {
   /** Runs an inbox action, refreshes, and reports the outcome. Returns true on success. */
   const act = async (action, body, success, sub) => {
     try {
-      const updated = await api(`${base}/conversations/${sel.id}/${action}`, { method: "POST", body: body || undefined });
+      const updated = await api(`${base}/conversations/${sel.id}/${action}`, body instanceof FormData ? { method: "POST", form: body } : { method: "POST", body: body || undefined });
       if (updated) conv.setData(updated);
       else await conv.reload();
       list.reload();

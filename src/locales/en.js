@@ -1,8 +1,11 @@
 // English plural forms. Every other English string is its own key.
 export default {
+  "Free trial: {count} days left": { one: "Free trial: {count} day left", other: "Free trial: {count} days left" },
   "{count} pages": { one: "{count} page", other: "{count} pages" },
   "{count} sources": { one: "{count} source", other: "{count} sources" },
   "{count} agents": { one: "{count} agent", other: "{count} agents" },
+  "{count} actions": { one: "{count} action", other: "{count} actions" },
+  "{count} procedures": { one: "{count} procedure", other: "{count} procedures" },
   "{count} passages": { one: "{count} passage", other: "{count} passages" },
   "{count} sources used": { one: "{count} source used", other: "{count} sources used" },
   "{count} files": { one: "{count} file", other: "{count} files" },

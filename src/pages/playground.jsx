@@ -1,20 +1,32 @@
 import { useEffect, useRef, useState } from "react";
-import { t, tk } from "../i18n.js";
+import { t, tk, getLang } from "../i18n.js";
 import { Icon } from "../icons.jsx";
 import { api } from "../api.js";
+import { questionLists, questionsFor } from "../suggestions.js";
+import { SuggestionEditor } from "./suggestion-editor.jsx";
 import { useWorkspace } from "../workspace.jsx";
 import { go } from "../hooks.js";
 import { TextInput, Textarea, SwitchField, SegmentedControl, Button, PageHeader, Field, EmptyState, StatusBadge, useToast, clock } from "../ui.jsx";
-import { AgentSelect } from "./shared.jsx";
 
 const TONES = [
-  { value: "professional", label: tk("Professional"), hint: tk("Clear and formal. Avoids casual phrasing.") },
-  { value: "friendly", label: tk("Friendly"), hint: tk("Warm and conversational, still to the point.") },
-  { value: "concise", label: tk("Concise"), hint: tk("The shortest complete answer.") },
+  {
+    value: "professional",
+    label: tk("Professional"),
+    hint: tk("Clear and formal. Avoids casual phrasing."),
+  },
+  {
+    value: "friendly",
+    label: tk("Friendly"),
+    hint: tk("Warm and conversational, still to the point."),
+  },
+  {
+    value: "concise",
+    label: tk("Concise"),
+    hint: tk("The shortest complete answer."),
+  },
 ];
-const FIELDS = ["name", "purpose", "instructions", "tone", "welcome", "fallback", "handoff"];
-const pick = (a) => Object.fromEntries(FIELDS.map((k) => [k, a[k]]));
-const SUGGESTED = [tk("What's your return policy?"), tk("How long does shipping take?"), tk("Can I talk to a person?")];
+const FIELDS = ["name", "purpose", "instructions", "tone", "welcome", "fallback", "handoff", "suggested_questions_i18n", "suggestion_default_language"];
+const pick = (a) => Object.fromEntries(FIELDS.map((k) => [k, k === "suggested_questions_i18n" ? questionLists(a) : k === "suggestion_default_language" ? a[k] || "en" : a[k]]));
 
 function SourcesUsed({ sources }) {
   const [open, setOpen] = useState(false);
@@ -50,10 +62,17 @@ function SourcesUsed({ sources }) {
   );
 }
 
-const KIND_NOTE = { fallback: tk("fallback"), handoff: tk("would hand off to the team"), blocked: tk("blocked by moderation") };
+const KIND_NOTE = {
+  fallback: tk("fallback"),
+  handoff: tk("would hand off to the team"),
+  blocked: tk("blocked by moderation"),
+};
 
 export function Playground() {
-  const { base, activeAgent: agent, agentsLoaded, reloadAgents, openDialog, isAdmin } = useWorkspace();
+  const { base, activeAgent: agent, agentsLoaded, reloadAgents, openDialog, isAdmin, workspace, summary } = useWorkspace();
+  // Before the free trial: a few free test answers, then the trial prompt (the API enforces the same count).
+  const billing = workspace.billing || {};
+  const freeLeft = billing.access === "none" ? Math.max(0, (billing.preview_messages || 0) - (workspace.usage?.messages || 0)) : null;
   const toast = useToast();
   const [draft, setDraft] = useState(() => (agent ? pick(agent) : null));
   const [draftFor, setDraftFor] = useState(agent?.id);
@@ -63,6 +82,7 @@ export function Playground() {
   const [typing, setTyping] = useState(false);
   const [text, setText] = useState("");
   const scroll = useRef(null);
+  const [questionLanguage, setQuestionLanguage] = useState(getLang);
 
   useEffect(() => {
     if (agent && draftFor !== agent.id) {
@@ -83,7 +103,15 @@ export function Playground() {
         <div className="page-body">
           <div className="page-inner">
             <div className="box">
-              <EmptyState icon="bot" title={t("Create an agent first")} action={<Button variant="primary" size="sm" onClick={() => openDialog("createAgent")}>{t("Create agent")}</Button>}>
+              <EmptyState
+                icon="bot"
+                title={t("Create an agent first")}
+                action={
+                  <Button variant="primary" size="sm" onClick={() => openDialog("createAgent")}>
+                    {t("Create agent")}
+                  </Button>
+                }
+              >
                 {t("Then come back to ask it questions.")}
               </EmptyState>
             </div>
@@ -94,26 +122,55 @@ export function Playground() {
   }
   if (!agent || !draft) return <PageHeader title={t("Playground")} />;
 
-  const dirty = FIELDS.some((k) => draft[k] !== agent[k]);
+  const dirty = FIELDS.some((k) => JSON.stringify(draft[k]) !== JSON.stringify(pick(agent)[k]));
   const set = (k) => (v) => setDraft((d) => ({ ...d, [k]: v && v.target ? v.target.value : v }));
 
   async function send(q) {
     const question = q.trim();
     if (!question || typing) return;
-    const history = messages.filter((m) => m.role === "visitor" || m.role === "ai").map((m) => ({ role: m.role, body: m.text })).slice(-10);
+    if (freeLeft === 0) return openDialog("trial");
+    const history = messages
+      .filter((m) => m.role === "visitor" || m.role === "ai")
+      .map((m) => ({ role: m.role, body: m.text }))
+      .slice(-10);
     setMessages((m) => [...m, { role: "visitor", text: question, at: Date.now() }]);
     setText("");
     setTyping(true);
     try {
       const r = await api(`${base}/agents/${agent.id}/test`, {
         method: "POST",
-        body: { question, history, draft: { name: draft.name, instructions: draft.instructions, tone: draft.tone, fallback: draft.fallback, handoff: draft.handoff } },
+        body: {
+          question,
+          history,
+          draft: {
+            name: draft.name,
+            instructions: draft.instructions,
+            tone: draft.tone,
+            fallback: draft.fallback,
+            handoff: draft.handoff,
+          },
+        },
       });
-      setMessages((m) => [...m, { role: "ai", text: r.text, kind: r.kind, sources: r.sources, at: Date.now() }]);
+      setMessages((m) => [
+        ...m,
+        {
+          role: "ai",
+          text: r.text,
+          kind: r.kind,
+          sources: r.sources,
+          at: Date.now(),
+        },
+      ]);
+      try {
+        localStorage.setItem(`replybek.tested.${agent.id}`, new Date().toISOString());
+      } catch {
+        /* Setup progress is optional. */
+      }
     } catch (e) {
       setMessages((m) => [...m, { role: "error", text: e.message, at: Date.now() }]);
     } finally {
       setTyping(false);
+      if (freeLeft !== null) summary.reload();
     }
   }
 
@@ -126,9 +183,17 @@ export function Playground() {
     if (Object.keys(e).length) return;
     setSaving(true);
     try {
-      await api(`${base}/agents/${agent.id}`, { method: "PATCH", body: { ...draft, name: draft.name.trim() } });
+      const lists = Object.fromEntries(Object.entries(draft.suggested_questions_i18n).map(([lang, questions]) => [lang, questions.map(q => q.trim()).filter(Boolean)]));
+      const savedDraft = { ...draft, name: draft.name.trim(), suggested_questions_i18n: lists };
+      await api(`${base}/agents/${agent.id}`, {
+        method: "PATCH",
+        body: { ...savedDraft, suggested_questions: lists[draft.suggestion_default_language] || [] },
+      });
+      setDraft(savedDraft);
       await reloadAgents();
-      toast(t("Agent settings saved"), { sub: agent.status === "active" ? t("The website widget uses them now.") : undefined });
+      toast(t("Agent settings saved"), {
+        sub: agent.status === "active" ? t("The website widget uses them now.") : undefined,
+      });
     } catch (err) {
       toast(err.message, { tone: "error" });
     } finally {
@@ -138,7 +203,9 @@ export function Playground() {
 
   async function setPublished(on) {
     try {
-      await api(`${base}/agents/${agent.id}/${on ? "publish" : "unpublish"}`, { method: "POST" });
+      await api(`${base}/agents/${agent.id}/${on ? "publish" : "unpublish"}`, {
+        method: "POST",
+      });
       await reloadAgents();
       toast(on ? t("{name} is published", { name: agent.name }) : t("{name} is a draft again", { name: agent.name }));
     } catch (err) {
@@ -148,7 +215,7 @@ export function Playground() {
 
   return (
     <>
-      <PageHeader title={t("Playground")} description={t("Test answers and adjust how the agent behaves.")} actions={<AgentSelect id="pg-agent" />} />
+      <h1 className="sr-only">{t("Playground")}</h1>
       <div className="page-body pg-scroll" style={{ overflow: "hidden auto" }}>
         <div className="pg">
           <section className="pg-chat" aria-labelledby="pg-chat-title">
@@ -182,10 +249,10 @@ export function Playground() {
                         </button>
                       )}
                     </span>
-                    <div className="chips">
-                      {SUGGESTED.map((q) => (
-                        <button type="button" key={q} className="chip" onClick={() => send(t(q))}>
-                          {t(q)}
+                    <div className="chips" aria-label={t("Suggested questions")}>
+                      {questionsFor(draft, questionLanguage).filter((q) => q.trim()).map((q, index) => (
+                        <button type="button" key={index} className="chip" onClick={() => send(q)}>
+                          {q}
                         </button>
                       ))}
                     </div>
@@ -216,7 +283,7 @@ export function Playground() {
                       <div className="tbody">{m.text}</div>
                       <SourcesUsed sources={m.sources} />
                     </div>
-                  )
+                  ),
                 )}
                 {typing && (
                   <div className="typing" role="status" aria-label={t("Agent is answering")}>
@@ -227,6 +294,14 @@ export function Playground() {
                 )}
               </div>
             </div>
+            {freeLeft !== null && (
+              <p className={"pg-free" + (freeLeft === 0 ? " out" : "")} role="status">
+                {freeLeft > 0 ? t("{count} of {total} free test messages left", { count: freeLeft, total: billing.preview_messages }) : t("Free test messages used")}
+                <button type="button" onClick={() => go("settings", "billing")}>
+                  {t("Start free trial")}
+                </button>
+              </p>
+            )}
             <form
               className="pg-composer"
               onSubmit={(e) => {
@@ -259,6 +334,13 @@ export function Playground() {
           </section>
 
           <aside className="pg-config" aria-label={t("Agent settings")}>
+            <div className="config-heading">
+              <Icon name="settings" size={18} />
+              <div>
+                <h2>{t("Agent settings")}</h2>
+                <p>{t("Adjust, test, then save.")}</p>
+              </div>
+            </div>
             <div className="pg-config-scroll">
               <div className="cfg-sec">
                 <div className="row" style={{ justifyContent: "space-between" }}>
@@ -266,7 +348,8 @@ export function Playground() {
                   <StatusBadge status={agent.status} label={agent.status === "active" ? t("Published") : t("Draft")} />
                 </div>
                 <p className="helper">
-                  {agent.status === "active" ? t("The website widget answers visitors with this agent.") : t("Only you can test it here. Publish to let the website widget answer visitors.")} {t("{count} sources", { count: agent.source_count })}
+                  {agent.status === "active" ? t("The website widget answers visitors with this agent.") : t("Only you can test it here. Publish to let the website widget answer visitors.")}{" "}
+                  {t("{count} sources", { count: agent.source_count })}
                   {agent.source_errors ? `, ${t("{count} failed", { count: agent.source_errors })}` : ""} ·{" "}
                   <button type="button" className="link" onClick={() => go("knowledge")}>
                     {t("Manage")}
@@ -281,23 +364,78 @@ export function Playground() {
               <div className="cfg-sec">
                 <h2 className="cfg-sec-title">{t("Identity")}</h2>
                 <TextInput id="pg-name" label={t("Agent name")} value={draft.name} onChange={set("name")} error={errors.name} maxLength={80} disabled={!isAdmin} />
-                <TextInput id="pg-purpose" label={t("Short description")} hint={t("For your team. Visitors don't see this.")} value={draft.purpose} onChange={set("purpose")} maxLength={500} disabled={!isAdmin} />
+                <TextInput
+                  id="pg-purpose"
+                  label={t("Short description")}
+                  hint={t("For your team. Visitors don't see this.")}
+                  value={draft.purpose}
+                  onChange={set("purpose")}
+                  maxLength={500}
+                  disabled={!isAdmin}
+                />
               </div>
               <div className="cfg-sec">
                 <h2 className="cfg-sec-title">{t("Behavior")}</h2>
-                <Textarea id="pg-ins" label={t("Instructions")} hint={t("Plain-language guidance the agent follows alongside its knowledge. Test questions use your unsaved changes.")} rows={7} value={draft.instructions} onChange={set("instructions")} maxLength={8000} disabled={!isAdmin} />
+                <Textarea
+                  id="pg-ins"
+                  label={t("Instructions")}
+                  hint={t("Plain-language guidance the agent follows alongside its knowledge. Test questions use your unsaved changes.")}
+                  rows={7}
+                  value={draft.instructions}
+                  onChange={set("instructions")}
+                  maxLength={8000}
+                  disabled={!isAdmin}
+                />
                 <Field id="pg-tone" label={t("Tone")} hint={t(TONES.find((x) => x.value === draft.tone)?.hint)}>
-                  <SegmentedControl full label={t("Tone")} value={draft.tone} onChange={set("tone")} options={TONES.map((x) => ({ value: x.value, label: t(x.label), disabled: !isAdmin }))} />
+                  <SegmentedControl
+                    full
+                    label={t("Tone")}
+                    value={draft.tone}
+                    onChange={set("tone")}
+                    options={TONES.map((x) => ({
+                      value: x.value,
+                      label: t(x.label),
+                      disabled: !isAdmin,
+                    }))}
+                  />
                 </Field>
               </div>
+              <SuggestionEditor key={agent.id} base={base} agent={agent} value={draft.suggested_questions_i18n} onChange={set("suggested_questions_i18n")} disabled={!isAdmin} language={questionLanguage} onLanguage={setQuestionLanguage} defaultLanguage={draft.suggestion_default_language} onDefaultLanguage={set("suggestion_default_language")} />
               <div className="cfg-sec">
                 <h2 className="cfg-sec-title">{t("Messages")}</h2>
-                <Textarea id="pg-welcome" label={t("Welcome message")} hint={t("The first message visitors see in the widget.")} rows={2} value={draft.welcome} onChange={set("welcome")} error={errors.welcome} maxLength={500} disabled={!isAdmin} />
-                <Textarea id="pg-fallback" label={t("Fallback message")} hint={t("Used when the knowledge doesn't answer the question.")} rows={2} value={draft.fallback} onChange={set("fallback")} error={errors.fallback} maxLength={500} disabled={!isAdmin} />
+                <Textarea
+                  id="pg-welcome"
+                  label={t("Welcome message")}
+                  hint={t("The first message visitors see in the widget.")}
+                  rows={2}
+                  value={draft.welcome}
+                  onChange={set("welcome")}
+                  error={errors.welcome}
+                  maxLength={500}
+                  disabled={!isAdmin}
+                />
+                <Textarea
+                  id="pg-fallback"
+                  label={t("Fallback message")}
+                  hint={t("Used when the knowledge doesn't answer the question.")}
+                  rows={2}
+                  value={draft.fallback}
+                  onChange={set("fallback")}
+                  error={errors.fallback}
+                  maxLength={500}
+                  disabled={!isAdmin}
+                />
               </div>
               <div className="cfg-sec">
                 <h2 className="cfg-sec-title">{t("Handoff")}</h2>
-                <SwitchField id="pg-handoff" label={t("Offer human handoff")} hint={t("When a visitor asks for a person or reports a damaged item, the conversation moves to the Inbox and the AI pauses.")} checked={draft.handoff} onChange={set("handoff")} disabled={!isAdmin} />
+                <SwitchField
+                  id="pg-handoff"
+                  label={t("Offer human handoff")}
+                  hint={t("When a visitor asks for a person or reports a damaged item, the conversation moves to the Inbox and the AI pauses.")}
+                  checked={draft.handoff}
+                  onChange={set("handoff")}
+                  disabled={!isAdmin}
+                />
               </div>
             </div>
             {isAdmin && (

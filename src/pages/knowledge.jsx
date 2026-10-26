@@ -4,7 +4,31 @@ import { Icon } from "../icons.jsx";
 import { api } from "../api.js";
 import { useWorkspace } from "../workspace.jsx";
 import { useResource, go } from "../hooks.js";
-import { Dialog, Drawer, Confirm, TextInput, Textarea, Field, Select, SegmentedControl, StatusBadge, Button, IconButton, ActionMenu, PageHeader, Table, Callout, EmptyState, TYPE_META, typeLabel, timeAgo, dateLong, fmt, useToast, looksLikeUrl } from "../ui.jsx";
+import {
+  Dialog,
+  Drawer,
+  Confirm,
+  TextInput,
+  Textarea,
+  Field,
+  Select,
+  SegmentedControl,
+  StatusBadge,
+  Button,
+  IconButton,
+  ActionMenu,
+  PageHeader,
+  Table,
+  Callout,
+  EmptyState,
+  TYPE_META,
+  typeLabel,
+  timeAgo,
+  dateLong,
+  fmt,
+  useToast,
+  looksLikeUrl,
+} from "../ui.jsx";
 import { AgentSelect, Loading } from "./shared.jsx";
 
 export const fileSize = (b) => (b > 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB");
@@ -20,7 +44,13 @@ export function FilePicker({ files, onChange, compact, error }) {
     const names = new Set(files.map((f) => f.name));
     const picked = [...list];
     const bad = picked.filter((f) => !ACCEPT.test(f.name) || f.size > MAX);
-    setProblem(bad.length ? t("{names}: use PDF, DOCX, TXT, MD or CSV up to 20 MB.", { names: bad.map((f) => f.name).join(", ") }) : "");
+    setProblem(
+      bad.length
+        ? t("{names}: use PDF, DOCX, TXT, MD or CSV up to 20 MB.", {
+            names: bad.map((f) => f.name).join(", "),
+          })
+        : "",
+    );
     onChange([...files, ...picked.filter((f) => !bad.includes(f) && !names.has(f.name))]);
   };
   const msg = problem || error;
@@ -85,14 +115,23 @@ export function FilePicker({ files, onChange, compact, error }) {
 }
 
 const INTERVALS = [
-  { value: 0, label: tk("Off"), description: tk("Only when you re-sync by hand") },
+  {
+    value: 0,
+    label: tk("Off"),
+    description: tk("Only when you re-sync by hand"),
+  },
   { value: 1, label: tk("Daily") },
   { value: 7, label: tk("Weekly") },
   { value: 30, label: tk("Monthly") },
 ];
 const sectionLabel = (p) => (p === "/" ? t("Top-level pages") : p);
 /** The auto re-sync choices, translated. */
-const intervals = () => INTERVALS.map((i) => ({ ...i, label: t(i.label), description: i.description && t(i.description) }));
+const intervals = () =>
+  INTERVALS.map((i) => ({
+    ...i,
+    label: t(i.label),
+    description: i.description && t(i.description),
+  }));
 
 /** Website step: check the site, then choose sections (from its sitemap), the whole site or one page. */
 function WebsiteForm({ agentId, value, onChange, error, checkRef }) {
@@ -107,7 +146,10 @@ function WebsiteForm({ agentId, value, onChange, error, checkRef }) {
     setChecking(true);
     setCheckError("");
     try {
-      const p = await api(`${base}/agents/${agentId}/sources/website/preview`, { method: "POST", body: { url: url.trim() } });
+      const p = await api(`${base}/agents/${agentId}/sources/website/preview`, {
+        method: "POST",
+        body: { url: url.trim() },
+      });
       const suggested = p.sections.length ? (p.suggested_paths.length ? p.suggested_paths : p.sections.map((s) => s.prefix)) : p.suggested_paths;
       set({ preview: p, mode: "site", paths: suggested });
     } catch (e) {
@@ -146,9 +188,20 @@ function WebsiteForm({ agentId, value, onChange, error, checkRef }) {
       {preview && (
         <div className="site-preview">
           <div className="row" style={{ gap: 8 }}>
-            <Icon name={preview.sitemap ? "checkCircle" : "info"} size={15} style={{ color: preview.sitemap ? "var(--green)" : "var(--fg-3)" }} />
+            <Icon
+              name={preview.sitemap ? "checkCircle" : "info"}
+              size={15}
+              style={{
+                color: preview.sitemap ? "var(--green)" : "var(--fg-3)",
+              }}
+            />
             <span className="strong text-sm">
-              {preview.sitemap ? t("Found {count} pages on {host}", { count: preview.total, host: preview.host }) : t("No sitemap on {host}", { host: preview.host })}
+              {preview.sitemap
+                ? t("Found {count} pages on {host}", {
+                    count: preview.total,
+                    host: preview.host,
+                  })
+                : t("No sitemap on {host}", { host: preview.host })}
             </span>
           </div>
           <SegmentedControl
@@ -157,7 +210,10 @@ function WebsiteForm({ agentId, value, onChange, error, checkRef }) {
             value={mode}
             onChange={(m) => set({ mode: m })}
             options={[
-              { value: "site", label: preview.sitemap ? t("Sections of the site") : t("Follow links") },
+              {
+                value: "site",
+                label: preview.sitemap ? t("Sections of the site") : t("Follow links"),
+              },
               { value: "page", label: t("Only this page") },
             ]}
           />
@@ -166,7 +222,15 @@ function WebsiteForm({ agentId, value, onChange, error, checkRef }) {
               <legend className="sr-only">{t("Sections to import")}</legend>
               {preview.sections.map((s) => (
                 <label className="check" key={s.prefix}>
-                  <input type="checkbox" checked={paths.includes(s.prefix)} onChange={(e) => set({ paths: e.target.checked ? [...paths, s.prefix] : paths.filter((p) => p !== s.prefix) })} />
+                  <input
+                    type="checkbox"
+                    checked={paths.includes(s.prefix)}
+                    onChange={(e) =>
+                      set({
+                        paths: e.target.checked ? [...paths, s.prefix] : paths.filter((p) => p !== s.prefix),
+                      })
+                    }
+                  />
                   <span className="sections-row">
                     <span className="mono">{sectionLabel(s.prefix)}</span>
                     <span className="helper num">{t("{count} pages", { count: s.count })}</span>
@@ -176,14 +240,31 @@ function WebsiteForm({ agentId, value, onChange, error, checkRef }) {
             </fieldset>
           )}
           {mode === "site" && !preview.sitemap && (
-            <p className="helper">{paths.length ? t("Replybek will follow links from this page within {paths}, up to {limit} pages.", { paths: paths.join(", "), limit: fmt(preview.page_limit) }) : t("Replybek will follow links from this page, up to {limit} pages.", { limit: fmt(preview.page_limit) })}</p>
+            <p className="helper">
+              {paths.length
+                ? t("Replybek will follow links from this page within {paths}, up to {limit} pages.", { paths: paths.join(", "), limit: fmt(preview.page_limit) })
+                : t("Replybek will follow links from this page, up to {limit} pages.", { limit: fmt(preview.page_limit) })}
+            </p>
           )}
           {mode === "site" && preview.sitemap && selected > preview.page_limit && (
-            <Callout tone="warn">{t("Your plan imports up to {limit} pages per website. The first {limit} of {total} will be imported.", { limit: fmt(preview.page_limit), total: fmt(selected) })}</Callout>
+            <Callout tone="warn">
+              {t("Your plan imports up to {limit} pages per website. The first {limit} of {total} will be imported.", { limit: fmt(preview.page_limit), total: fmt(selected) })}
+            </Callout>
           )}
-          {preview.blocked_by_robots > 0 && <p className="helper">{t("{count} pages are skipped because the site's robots.txt asks crawlers not to read them.", { count: preview.blocked_by_robots })}</p>}
+          {preview.blocked_by_robots > 0 && (
+            <p className="helper">{t("{count} pages are skipped because the site's robots.txt asks crawlers not to read them.", { count: preview.blocked_by_robots })}</p>
+          )}
           {mode === "site" && (
-            <Select id="ak-interval" label={t("Re-sync automatically")} hint={t("Picks up new and changed pages. Unchanged pages aren't processed again.")} value={interval} onChange={(v) => set({ interval: v })} options={intervals()} size="sm" width={180} />
+            <Select
+              id="ak-interval"
+              label={t("Re-sync automatically")}
+              hint={t("Picks up new and changed pages. Unchanged pages aren't processed again.")}
+              value={interval}
+              onChange={(v) => set({ interval: v })}
+              options={intervals()}
+              size="sm"
+              width={180}
+            />
           )}
         </div>
       )}
@@ -197,7 +278,13 @@ export function AddKnowledgeDialog({ onClose, tab: initialTab = "website", prefi
   const [agentId, setAgentId] = useState(initialAgent || activeAgent?.id);
   const agent = agents.find((a) => a.id === agentId);
   const [tab, setTab] = useState(initialTab);
-  const [site, setSite] = useState({ url: "", preview: null, mode: "site", paths: [], interval: 7 });
+  const [site, setSite] = useState({
+    url: "",
+    preview: null,
+    mode: "site",
+    paths: [],
+    interval: 7,
+  });
   const [files, setFiles] = useState([]);
   const [q, setQ] = useState(prefillQ);
   const [a, setA] = useState("");
@@ -223,10 +310,26 @@ export function AddKnowledgeDialog({ onClose, tab: initialTab = "website", prefi
         const allSections = site.preview.sitemap && site.paths.length === site.preview.sections.length;
         await api(`${path}/website`, {
           method: "POST",
-          body: site.mode === "page" ? { url: site.preview.url, mode: "page" } : { url: site.preview.url, mode: "site", include_paths: allSections ? [] : site.paths, sync_interval_days: site.interval },
+          body:
+            site.mode === "page"
+              ? { url: site.preview.url, mode: "page" }
+              : {
+                  url: site.preview.url,
+                  mode: "site",
+                  include_paths: allSections ? [] : site.paths,
+                  sync_interval_days: site.interval,
+                },
         });
       }
-      if (tab === "qa") await api(`${path}/qa`, { method: "POST", body: { question: q.trim(), answer: a.trim(), ...(unansweredId ? { unanswered_id: unansweredId } : {}) } });
+      if (tab === "qa")
+        await api(`${path}/qa`, {
+          method: "POST",
+          body: {
+            question: q.trim(),
+            answer: a.trim(),
+            ...(unansweredId ? { unanswered_id: unansweredId } : {}),
+          },
+        });
       if (tab === "file") {
         const failed = [];
         for (const file of files) {
@@ -239,17 +342,31 @@ export function AddKnowledgeDialog({ onClose, tab: initialTab = "website", prefi
           }
         }
         if (failed.length === files.length) throw new Error(failed.join(" · "));
-        if (failed.length) toast(t("{done} of {total} files added", { done: files.length - failed.length, total: files.length }), { tone: "error", sub: failed.join(" · "), duration: 9000 });
+        if (failed.length)
+          toast(
+            t("{done} of {total} files added", {
+              done: files.length - failed.length,
+              total: files.length,
+            }),
+            { tone: "error", sub: failed.join(" · "), duration: 9000 },
+          );
       }
     } catch (err) {
       setBusy(false);
-      return setErrors({ [tab === "website" ? "url" : tab === "file" ? "files" : "a"]: err.message });
+      return setErrors({
+        [tab === "website" ? "url" : tab === "file" ? "files" : "a"]: err.message,
+      });
     }
     reloadAgents();
     onDone && onDone();
     onClose();
     toast(tab === "qa" ? t("Q&A saved") : tab === "website" ? (site.mode === "page" ? t("Page added") : t("Website import started")) : t("Files added"), {
-      sub: tab === "website" && site.mode === "site" ? t("Progress shows in the Knowledge table. Large sites take a few minutes.") : t("{name} can use it once processing finishes.", { name: agent?.name || t("The agent") }),
+      sub:
+        tab === "website" && site.mode === "site"
+          ? t("Progress shows in the Knowledge table. Large sites take a few minutes.")
+          : t("{name} can use it once processing finishes.", {
+              name: agent?.name || t("The agent"),
+            }),
     });
   }
 
@@ -258,15 +375,15 @@ export function AddKnowledgeDialog({ onClose, tab: initialTab = "website", prefi
       ? !site.preview
         ? t("Check site")
         : site.mode === "page"
-        ? t("Add page")
-        : sitePages != null
-        ? `Import ${fmt(Math.min(sitePages, site.preview.page_limit))} pages`
-        : t("Import website")
+          ? t("Add page")
+          : sitePages != null
+            ? `Import ${fmt(Math.min(sitePages, site.preview.page_limit))} pages`
+            : t("Import website")
       : tab === "file"
-      ? files.length > 1
-        ? `Add ${files.length} files`
-        : t("Add file")
-      : t("Save Q&A");
+        ? files.length > 1
+          ? `Add ${files.length} files`
+          : t("Add file")
+        : t("Save Q&A");
   return (
     <Dialog
       title={t("Add knowledge")}
@@ -311,8 +428,26 @@ export function AddKnowledgeDialog({ onClose, tab: initialTab = "website", prefi
       {tab === "file" && <FilePicker files={files} onChange={setFiles} error={errors.files} />}
       {tab === "qa" && (
         <>
-          <TextInput id="ak-q" label={t("Question")} hint={t("Write it the way a customer would ask.")} placeholder={t("e.g. Do you offer gift wrapping?")} value={q} onChange={(e) => setQ(e.target.value)} error={errors.q} data-autofocus={!prefillQ || undefined} />
-          <Textarea id="ak-a" label={t("Answer")} rows={4} placeholder={t("The answer the agent should give.")} value={a} onChange={(e) => setA(e.target.value)} error={errors.a} data-autofocus={prefillQ ? true : undefined} />
+          <TextInput
+            id="ak-q"
+            label={t("Question")}
+            hint={t("Write it the way a customer would ask.")}
+            placeholder={t("e.g. Do you offer gift wrapping?")}
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            error={errors.q}
+            data-autofocus={!prefillQ || undefined}
+          />
+          <Textarea
+            id="ak-a"
+            label={t("Answer")}
+            rows={4}
+            placeholder={t("The answer the agent should give.")}
+            value={a}
+            onChange={(e) => setA(e.target.value)}
+            error={errors.a}
+            data-autofocus={prefillQ ? true : undefined}
+          />
           {unansweredId && <Callout>{t("This question came from your unanswered list. Once saved, the agent can answer it.")}</Callout>}
         </>
       )}
@@ -324,24 +459,59 @@ function Readiness({ s, onRetry, onResync, canEdit }) {
   if (s.status === "processing")
     return (
       <Callout tone="info" icon="loader">
-        <strong>{s.progress ? t("Processing {done} of {total} pages.", { done: fmt(s.progress.done), total: fmt(s.progress.total) }) : t("Processing.")}</strong> {t("Reading, splitting and indexing the content.")}
+        <strong>
+          {s.progress
+            ? t("Processing {done} of {total} pages.", {
+                done: fmt(s.progress.done),
+                total: fmt(s.progress.total),
+              })
+            : t("Processing.")}
+        </strong>{" "}
+        {t("Reading, splitting and indexing the content.")}
       </Callout>
     );
   if (s.status === "error")
     return (
-      <Callout tone="bad" action={canEdit && <Button size="sm" icon="refresh" onClick={onRetry}>{t("Retry")}</Button>}>
+      <Callout
+        tone="bad"
+        action={
+          canEdit && (
+            <Button size="sm" icon="refresh" onClick={onRetry}>
+              {t("Retry")}
+            </Button>
+          )
+        }
+      >
         <strong>{t("This source can't be used for answers.")}</strong> {s.error}
       </Callout>
     );
   if (s.syncing)
     return (
       <Callout tone="info" icon="loader">
-        <strong>{s.progress ? t("Re-syncing: {done} of {total} pages checked.", { done: fmt(s.progress.done), total: fmt(s.progress.total) }) : t("Re-syncing.")}</strong> {t("The agent keeps answering from the current pages meanwhile.")}
+        <strong>
+          {s.progress
+            ? t("Re-syncing: {done} of {total} pages checked.", {
+                done: fmt(s.progress.done),
+                total: fmt(s.progress.total),
+              })
+            : t("Re-syncing.")}
+        </strong>{" "}
+        {t("The agent keeps answering from the current pages meanwhile.")}
       </Callout>
     );
   if (s.error)
     return (
-      <Callout tone="warn" action={canEdit && s.type === "website" && <Button size="sm" icon="refresh" onClick={onResync}>{t("Re-sync")}</Button>}>
+      <Callout
+        tone="warn"
+        action={
+          canEdit &&
+          s.type === "website" && (
+            <Button size="sm" icon="refresh" onClick={onResync}>
+              {t("Re-sync")}
+            </Button>
+          )
+        }
+      >
         <strong>{t("Available for answers.")}</strong> {s.error}
       </Callout>
     );
@@ -372,7 +542,12 @@ function PagesList({ sourceId }) {
           onChange={setFilter}
           options={[
             { value: "all", label: t("All"), count: all.length },
-            { value: "error", label: t("Failed"), count: failed, disabled: !failed },
+            {
+              value: "error",
+              label: t("Failed"),
+              count: failed,
+              disabled: !failed,
+            },
           ]}
         />
       </div>
@@ -380,32 +555,61 @@ function PagesList({ sourceId }) {
       <div className="page-list">
         {rows.slice(0, 200).map((p) => (
           <div className="page-item" key={p.id}>
-            <Icon name={p.status === "ready" ? "checkCircle" : "alertCircle"} size={14} style={{ color: p.status === "ready" ? "var(--green)" : "var(--amber)", marginTop: 2 }} />
+            <Icon
+              name={p.status === "ready" ? "checkCircle" : "alertCircle"}
+              size={14}
+              style={{
+                color: p.status === "ready" ? "var(--green)" : "var(--amber)",
+                marginTop: 2,
+              }}
+            />
             <div style={{ minWidth: 0, flex: 1 }}>
               <a className="page-title truncate" href={p.url} target="_blank" rel="noopener noreferrer">
                 {p.title || new URL(p.url).pathname}
               </a>
-              <div className="helper truncate">{p.status === "ready" ? `${new URL(p.url).pathname} · ${t("{count} passages", { count: p.chunk_count })}` : `${new URL(p.url).pathname} · ${p.error}`}</div>
+              <div className="helper truncate">
+                {p.status === "ready" ? `${new URL(p.url).pathname} · ${t("{count} passages", { count: p.chunk_count })}` : `${new URL(p.url).pathname} · ${p.error}`}
+              </div>
             </div>
           </div>
         ))}
-        {rows.length === 0 && <p className="helper" style={{ padding: 10 }}>{t("No pages match.")}</p>}
+        {rows.length === 0 && (
+          <p className="helper" style={{ padding: 10 }}>
+            {t("No pages match.")}
+          </p>
+        )}
       </div>
-      {rows.length > 200 && <p className="helper">{t("Showing 200 of {total}. Search to find a page.", { total: fmt(rows.length) })}</p>}
+      {rows.length > 200 && (
+        <p className="helper">
+          {t("Showing 200 of {total}. Search to find a page.", {
+            total: fmt(rows.length),
+          })}
+        </p>
+      )}
     </div>
   );
 }
 
-const DISCOVERY = { sitemap: tk("From the site's sitemap"), links: tk("By following links"), page: tk("Single page") };
+const DISCOVERY = {
+  sitemap: tk("From the site's sitemap"),
+  links: tk("By following links"),
+  page: tk("Single page"),
+};
 
 function SourceDrawer({ id, onClose, onRemove, onChanged }) {
   const { base, agents, isAdmin } = useWorkspace();
   const toast = useToast();
-  const src = useResource(`${base}/sources/${id}`, { poll: 2000, pollWhile: (d) => d.status === "processing" || d.syncing });
+  const src = useResource(`${base}/sources/${id}`, {
+    poll: 2000,
+    pollWhile: (d) => d.status === "processing" || d.syncing,
+  });
   const s = src.data;
   const act = async (path, body, msg) => {
     try {
-      const updated = await api(`${base}/sources/${id}${path}`, { method: body ? "PATCH" : "POST", body });
+      const updated = await api(`${base}/sources/${id}${path}`, {
+        method: body ? "PATCH" : "POST",
+        body,
+      });
       src.setData((d) => ({ ...d, ...updated }));
       src.reload();
       onChanged();
@@ -545,7 +749,10 @@ export function Knowledge({ id }) {
   const [query, setQuery] = useState("");
   const [type, setType] = useState("all");
   const [removing, setRemoving] = useState(null);
-  const list = useResource(activeAgent ? `${base}/agents/${activeAgent.id}/sources` : null, { poll: 2000, pollWhile: (d) => d.some((s) => s.status === "processing" || s.syncing) });
+  const list = useResource(activeAgent ? `${base}/agents/${activeAgent.id}/sources` : null, {
+    poll: 2000,
+    pollWhile: (d) => d.some((s) => s.status === "processing" || s.syncing),
+  });
   const all = list.data || [];
   // A source opened by link (e.g. "Review" on the Overview) may belong to another agent.
   useEffect(() => {
@@ -556,7 +763,12 @@ export function Knowledge({ id }) {
   const ready = all.filter((s) => s.status === "ready").length;
   const issues = all.filter((s) => s.status === "error");
   const processing = all.filter((s) => s.status === "processing").length;
-  const counts = { all: all.length, website: all.filter((s) => s.type === "website").length, file: all.filter((s) => s.type === "file").length, qa: all.filter((s) => s.type === "qa").length };
+  const counts = {
+    all: all.length,
+    website: all.filter((s) => s.type === "website").length,
+    file: all.filter((s) => s.type === "file").length,
+    qa: all.filter((s) => s.type === "qa").length,
+  };
   const refresh = () => {
     list.reload();
     reloadAgents();
@@ -591,7 +803,13 @@ export function Knowledge({ id }) {
         </div>
       ),
     },
-    { key: "type", header: t("Type"), hideSm: true, shrink: true, render: (s) => <span className="sec">{typeLabel(s.type)}</span> },
+    {
+      key: "type",
+      header: t("Type"),
+      hideSm: true,
+      shrink: true,
+      render: (s) => <span className="sec">{typeLabel(s.type)}</span>,
+    },
     {
       key: "status",
       header: t("Readiness"),
@@ -607,8 +825,21 @@ export function Knowledge({ id }) {
           <StatusBadge status={s.status} />
         ),
     },
-    { key: "updated", header: t("Updated"), hideSm: true, shrink: true, render: (s) => <span className="num sec">{timeAgo(s.last_synced_at || s.updated_at)}</span> },
-    { key: "size", header: t("Size"), hideSm: true, shrink: true, align: "right", render: (s) => <span className="num sec">{sizeOf(s)}</span> },
+    {
+      key: "updated",
+      header: t("Updated"),
+      hideSm: true,
+      shrink: true,
+      render: (s) => <span className="num sec">{timeAgo(s.last_synced_at || s.updated_at)}</span>,
+    },
+    {
+      key: "size",
+      header: t("Size"),
+      hideSm: true,
+      shrink: true,
+      align: "right",
+      render: (s) => <span className="num sec">{sizeOf(s)}</span>,
+    },
     {
       key: "actions",
       header: t("Actions"),
@@ -618,9 +849,31 @@ export function Knowledge({ id }) {
         <ActionMenu
           label={t("Actions for {name}", { name: s.name })}
           items={[
-            { label: t("View details"), icon: "eye", onSelect: () => go("knowledge", s.id) },
-            ...(isAdmin && s.status === "error" ? [{ label: t("Retry"), icon: "refresh", onSelect: () => retry(s) }] : []),
-            ...(isAdmin ? [{ separator: true }, { label: t("Remove source"), icon: "trash", danger: true, onSelect: () => setRemoving(s) }] : []),
+            {
+              label: t("View details"),
+              icon: "eye",
+              onSelect: () => go("knowledge", s.id),
+            },
+            ...(isAdmin && s.status === "error"
+              ? [
+                  {
+                    label: t("Retry"),
+                    icon: "refresh",
+                    onSelect: () => retry(s),
+                  },
+                ]
+              : []),
+            ...(isAdmin
+              ? [
+                  { separator: true },
+                  {
+                    label: t("Remove source"),
+                    icon: "trash",
+                    danger: true,
+                    onSelect: () => setRemoving(s),
+                  },
+                ]
+              : []),
           ]}
           trigger={(p) => <IconButton icon="more" size="sm" label={t("Actions for {name}", { name: s.name })} {...p} />}
         />
@@ -635,7 +888,15 @@ export function Knowledge({ id }) {
         <div className="page-body">
           <div className="page-inner">
             <div className="box">
-              <EmptyState icon="bot" title={t("Create an agent first")} action={<Button variant="primary" size="sm" onClick={() => openDialog("createAgent")}>{t("Create agent")}</Button>}>
+              <EmptyState
+                icon="bot"
+                title={t("Create an agent first")}
+                action={
+                  <Button variant="primary" size="sm" onClick={() => openDialog("createAgent")}>
+                    {t("Create agent")}
+                  </Button>
+                }
+              >
                 {t("Knowledge belongs to an agent.")}
               </EmptyState>
             </div>
@@ -652,7 +913,6 @@ export function Knowledge({ id }) {
         description={activeAgent ? t("What {name} uses to answer", { name: activeAgent.name }) : " "}
         actions={
           <>
-            <AgentSelect id="kn-agent" />
             {isAdmin && (
               <Button variant="primary" icon="plus" onClick={add} disabled={!activeAgent}>
                 {t("Add knowledge")}
@@ -663,6 +923,36 @@ export function Knowledge({ id }) {
       />
       <div className="page-body">
         <div className="page-inner" style={{ gap: 16 }}>
+          {isAdmin && (
+            <div className="source-shortcuts">
+              {[
+                ["website", "globe", t("Website"), t("Import pages from your help center.")],
+                ["file", "file", t("Files"), t("Upload documents your team already uses.")],
+                ["qa", "qa", t("Q&A"), t("Add an answer in your own words.")],
+              ].map(([tab, icon, title, description]) => (
+                <button
+                  type="button"
+                  key={tab}
+                  onClick={() =>
+                    openDialog("addKnowledge", {
+                      tab,
+                      agentId: activeAgent?.id,
+                      onDone: refresh,
+                    })
+                  }
+                >
+                  <span className="source-shortcut-icon">
+                    <Icon name={icon} size={20} />
+                  </span>
+                  <span>
+                    <strong>{title}</strong>
+                    <small>{description}</small>
+                  </span>
+                  <Icon name="plus" size={15} />
+                </button>
+              ))}
+            </div>
+          )}
           {issues.length > 0 && (
             <Callout
               tone="warn"
@@ -689,7 +979,11 @@ export function Knowledge({ id }) {
                 onChange={setType}
                 options={[
                   { value: "all", label: t("All"), count: counts.all },
-                  { value: "website", label: t("Websites"), count: counts.website },
+                  {
+                    value: "website",
+                    label: t("Websites"),
+                    count: counts.website,
+                  },
                   { value: "file", label: t("Files"), count: counts.file },
                   { value: "qa", label: "Q&A", count: counts.qa },
                 ]}
@@ -697,7 +991,11 @@ export function Knowledge({ id }) {
             </div>
             {all.length > 0 && (
               <span className="helper" aria-live="polite">
-                {t("{done} of {total} ready", { done: ready, total: all.length })}{processing ? ` · ${t("{n} processing", { n: processing })}` : ""}
+                {t("{done} of {total} ready", {
+                  done: ready,
+                  total: all.length,
+                })}
+                {processing ? ` · ${t("{n} processing", { n: processing })}` : ""}
               </span>
             )}
           </div>
@@ -705,7 +1003,15 @@ export function Knowledge({ id }) {
             <Loading />
           ) : list.error && !list.data ? (
             <div className="box">
-              <EmptyState icon="alertCircle" title={t("Couldn't load knowledge")} action={<Button size="sm" onClick={list.reload}>{t("Try again")}</Button>}>
+              <EmptyState
+                icon="alertCircle"
+                title={t("Couldn't load knowledge")}
+                action={
+                  <Button size="sm" onClick={list.reload}>
+                    {t("Try again")}
+                  </Button>
+                }
+              >
                 {list.error.message}
               </EmptyState>
             </div>
@@ -713,7 +1019,9 @@ export function Knowledge({ id }) {
             <div className="box">
               <EmptyState
                 icon="book"
-                title={t("{name} has no knowledge yet", { name: activeAgent?.name || t("This agent") })}
+                title={t("{name} has no knowledge yet", {
+                  name: activeAgent?.name || t("This agent"),
+                })}
                 action={
                   isAdmin && (
                     <Button variant="primary" size="sm" icon="plus" onClick={add}>
@@ -746,7 +1054,15 @@ export function Knowledge({ id }) {
               </EmptyState>
             </div>
           ) : (
-            <Table caption={t("Knowledge sources for {name}", { name: activeAgent?.name })} columns={columns} rows={rows} rowKey={(s) => s.id} onRowClick={(s) => go("knowledge", s.id)} />
+            <Table
+              caption={t("Knowledge sources for {name}", {
+                name: activeAgent?.name,
+              })}
+              columns={columns}
+              rows={rows}
+              rowKey={(s) => s.id}
+              onRowClick={(s) => go("knowledge", s.id)}
+            />
           )}
           <p className="helper">{t("Sources belong to {name} only. The agent answers from them and nothing else.", { name: activeAgent?.name || t("the selected agent") })}</p>
         </div>
