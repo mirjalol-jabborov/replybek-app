@@ -25,8 +25,9 @@ const TONES = [
     hint: tk("The shortest complete answer."),
   },
 ];
-const FIELDS = ["name", "purpose", "instructions", "tone", "welcome", "fallback", "handoff", "suggested_questions_i18n", "suggestion_default_language"];
-const pick = (a) => Object.fromEntries(FIELDS.map((k) => [k, k === "suggested_questions_i18n" ? questionLists(a) : k === "suggestion_default_language" ? a[k] || "en" : a[k]]));
+const FIELDS = ["name", "purpose", "instructions", "tone", "welcome", "welcome_i18n", "fallback", "handoff", "suggested_questions_i18n", "suggestion_default_language"];
+const welcomes = (a) => ({ uz: a.welcome_i18n?.uz || "", ru: a.welcome_i18n?.ru || "" });
+const pick = (a) => Object.fromEntries(FIELDS.map((k) => [k, k === "suggested_questions_i18n" ? questionLists(a) : k === "welcome_i18n" ? welcomes(a) : k === "suggestion_default_language" ? a[k] || "en" : a[k]]));
 
 function SourcesUsed({ sources }) {
   const [open, setOpen] = useState(false);
@@ -414,6 +415,24 @@ export function Playground() {
                   maxLength={500}
                   disabled={!isAdmin}
                 />
+                {/* The same welcome for pages in Uzbek and Russian; empty shows the one above. */}
+                {[
+                  ["uz", t("In Uzbek")],
+                  ["ru", t("In Russian")],
+                ].map(([lang, label], i) => (
+                  <Textarea
+                    key={lang}
+                    id={`pg-welcome-${lang}`}
+                    label={label}
+                    optional
+                    hint={i === 1 ? t("Shown on pages in that language. If empty, visitors see the message above.") : undefined}
+                    rows={2}
+                    value={draft.welcome_i18n[lang]}
+                    onChange={(e) => setDraft((d) => ({ ...d, welcome_i18n: { ...d.welcome_i18n, [lang]: e.target.value } }))}
+                    maxLength={500}
+                    disabled={!isAdmin}
+                  />
+                ))}
                 <Textarea
                   id="pg-fallback"
                   label={t("Fallback message")}
