@@ -318,6 +318,13 @@ function HelpDialog({ onClose }) {
           </li>
         ))}
       </ol>
+      <div className="row" style={{ gap: 12, justifyContent: "space-between", flexWrap: "wrap", padding: "12px", borderRadius: 10, background: "var(--surface-muted)" }}>
+        <span className="helper" style={{ flex: "1 1 220px" }}>{t("Step-by-step guides for every feature, with short videos.")}</span>
+        <a className="btn btn-secondary btn-sm" href="https://docs.replybek.uz/" target="_blank" rel="noopener noreferrer">
+          <span className="btn-label">{t("Open the guides")}</span>
+          <Icon name="arrowRight" size={14} />
+        </a>
+      </div>
       <p className="helper">{t("Esc closes menus and dialogs. Enter sends a message; Shift+Enter adds a new line.")}</p>
     </Dialog>
   );

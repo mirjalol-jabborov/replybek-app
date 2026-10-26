@@ -632,6 +632,8 @@ export default {
   "Welcome back.": "Qaytganingizdan xursandmiz.",
   "At least 10 characters.": "Kamida 10 ta belgi.",
   "Create workspace": "Ish maydonini yaratish",
+  "Step-by-step guides for every feature, with short videos.": "Har bir imkoniyat uchun qisqa videoli bosqichma-bosqich qoʻllanmalar.",
+  "Open the guides": "Qoʻllanmalarni ochish",
   "By creating a workspace, you accept: {terms} and {privacy}.": "Ish maydonini yaratib, siz quyidagilarni qabul qilasiz: {terms} va {privacy}.",
   "Terms of Service": "Foydalanish shartlari",
   "Privacy Policy": "Maxfiylik siyosati",

@@ -642,6 +642,8 @@ export default {
   "Welcome back.": "С возвращением.",
   "At least 10 characters.": "Не менее 10 символов.",
   "Create workspace": "Создать пространство",
+  "Step-by-step guides for every feature, with short videos.": "Пошаговые руководства по каждой функции, с короткими видео.",
+  "Open the guides": "Открыть руководства",
   "By creating a workspace, you accept: {terms} and {privacy}.": "Создавая пространство, вы принимаете: {terms} и {privacy}.",
   "Terms of Service": "Условия использования",
   "Privacy Policy": "Политика конфиденциальности",
