@@ -1708,3 +1708,16 @@ body {
   text-underline-offset: 3px;
   touch-action: manipulation;
 }
+
+/* ───── Inbox: is the visitor there, are they typing ───── */
+.av-wrap { position: relative; display: inline-flex; flex: none; }
+.ib-row .av-wrap { align-self: start; }
+.online-dot { position: absolute; right: -1px; bottom: -1px; width: 10px; height: 10px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 2px var(--surface); }
+.presence.here { color: var(--green); }
+.presence.left { color: var(--fg-3); }
+.ib-prev.typing-now { color: var(--green); font-style: italic; }
+.ib-typing { display: flex; align-items: center; gap: 8px; padding: 6px 20px 2px; font-size: 12.5px; color: var(--fg-3); flex: none; }
+.typing-dots { display: inline-flex; gap: 3px; }
+.typing-dots span { width: 5px; height: 5px; border-radius: 50%; background: var(--fg-3); opacity: 0.35; animation: blink 1.2s infinite ease-in-out; }
+.typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.3s; }

@@ -7,6 +7,7 @@ import { apiUrl } from "./api.js";
  */
 const listeners = new Set();
 const statusListeners = new Set();
+const typingListeners = new Set(); // "a visitor is typing": shown, never a reason to fetch
 let source = null;
 let up = false;
 let retry = null;
@@ -30,6 +31,14 @@ export function connectLive(base) {
     s.addEventListener("ready", () => {
       setUp(true);
       tell({ resync: true });
+    });
+    s.addEventListener("typing", (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        for (const fn of typingListeners) fn(data);
+      } catch {
+        // not ours
+      }
     });
     s.onmessage = (e) => {
       try {
@@ -67,4 +76,10 @@ export const isLive = () => up;
 export function onLiveStatus(fn) {
   statusListeners.add(fn);
   return () => statusListeners.delete(fn);
+}
+
+/** Calls fn({ c: conversation id, who: "visitor" }) when a visitor is typing. Returns unsubscribe. */
+export function onTyping(fn) {
+  typingListeners.add(fn);
+  return () => typingListeners.delete(fn);
 }

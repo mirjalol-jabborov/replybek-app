@@ -4,7 +4,8 @@ import { Icon } from "../icons.jsx";
 import { api, apiUrl } from "../api.js";
 import { useWorkspace } from "../workspace.jsx";
 import { useResource, go } from "../hooks.js";
-import { Avatar, StatusBadge, Drawer, EmptyState, Sim, Button, IconButton, TextInput, Tabs, tabPanel, Select, ActionMenu, shortAge, clock, useToast, initialsOf, toneOf } from "../ui.jsx";
+import { onTyping } from "../live.js";
+import { Avatar, StatusBadge, Drawer, EmptyState, Sim, Button, IconButton, TextInput, Tabs, tabPanel, Select, ActionMenu, shortAge, timeAgo, clock, useToast, initialsOf, toneOf } from "../ui.jsx";
 import { AgentSelect, Loading } from "./shared.jsx";
 
 const VIEWS = [
@@ -86,7 +87,38 @@ function SourcesUsed({ sources }) {
   );
 }
 
-function ConversationRow({ c, selected, me }) {
+// ───── Is the visitor there? ─────
+// The widget checks in every 30 s while its page is open, so a check-in in the last 75 s means
+// they're in the chat now. Ages are measured on the server's clock: `skew` is this browser's
+// clock minus the server's, updated whenever conversations load.
+let skew = 0;
+const HERE_MS = 75000;
+const seenAgo = (c) => (c.visitor_seen_at ? Date.now() - skew - Date.parse(c.visitor_seen_at) : Infinity);
+function presenceOf(c) {
+  if (c.left_at) return { state: "left", label: c.continued_in ? t("Started a new chat") : t("Left the chat") };
+  if (seenAgo(c) < HERE_MS) return { state: "here", label: t("In the chat now") };
+  if (c.visitor_seen_at) return { state: "away", label: t("Last seen {ago}", { ago: timeAgo(Date.parse(c.visitor_seen_at) + skew) }) };
+  return null;
+}
+
+/** The visitor's avatar, with a green dot while they're in the chat. */
+function VisitorAvatar({ c, size }) {
+  const here = presenceOf(c)?.state === "here";
+  return (
+    <span className="av-wrap">
+      <Avatar initials={initialsOf(visitorName(c))} tone={toneOf(c.id)} size={size} />
+      {here && <span className="online-dot" title={t("In the chat now")} />}
+    </span>
+  );
+}
+
+// System messages with fixed wording are translated; ones with names in them stay as written.
+tk("Visitor started a new chat");
+tk("AI handed off to the team");
+tk("Visitor asked for a teammate");
+tk("Unassigned");
+
+function ConversationRow({ c, selected, me, typing }) {
   const { memberName, members } = useWorkspace();
   const last = c.last_message;
   const who = !last ? "" : last.role === "ai" ? `${t("AI")}: ` : last.role === "human" ? (last.author_id === me ? `${t("You")}: ` : `${firstName(memberName(last.author_id))}: `) : "";
@@ -94,7 +126,7 @@ function ConversationRow({ c, selected, me }) {
   return (
     <button type="button" className={"ib-row" + (c.unread ? " unread" : "")} aria-current={selected ? "true" : undefined} onClick={() => go("inbox", c.id)}>
       {c.unread && <span className="unread-dot" />}
-      <Avatar initials={initialsOf(visitorName(c))} tone={toneOf(c.id)} />
+      <VisitorAvatar c={c} />
       <span style={{ minWidth: 0 }}>
         <span className="ib-top">
           <span className="ib-name truncate">
@@ -103,8 +135,8 @@ function ConversationRow({ c, selected, me }) {
           </span>
           <span className="ib-time">{shortAge(c.last_message_at)}</span>
         </span>
-        <span className="ib-prev truncate" style={{ display: "block" }}>
-          {last ? `${who}${last.body || (last.files ? t("Sent a file") : "")}` : t("No messages yet")}
+        <span className={"ib-prev truncate" + (typing ? " typing-now" : "")} style={{ display: "block" }}>
+          {typing ? t("Typing…") : last ? `${who}${last.body || (last.files ? t("Sent a file") : "")}` : t("No messages yet")}
         </span>
         <span className="ib-foot">
           <StatusBadge status={c.status} />
@@ -157,7 +189,7 @@ function Transcript({ c, onHideSummary, showSummary }) {
           if (m.role === "system")
             return (
               <div className="tevent" key={m.id}>
-                {m.body} · {clock(m.created_at)}
+                {t(m.body)} · {clock(m.created_at)}
               </div>
             );
           if (m.role === "note")
@@ -227,7 +259,9 @@ function Handling({ c, me }) {
 }
 
 function Composer({ c, me, forceNote, onCancelNote, act }) {
+  const { base } = useWorkspace();
   const canReply = c.status === "human" && c.assignee_id === me;
+  const typedAt = useRef(0);
   const [mode, setMode] = useState(canReply && !forceNote ? "reply" : "note");
   const [text, setText] = useState("");
   const [file, setFile] = useState(null);
@@ -299,7 +333,14 @@ function Composer({ c, me, forceNote, onCancelNote, act }) {
           rows={3}
           placeholder={note ? t("Write a note for your team…") : t("Reply to {name}…", { name: firstName(visitorName(c)) })}
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => {
+            setText(e.target.value);
+            // The visitor sees "<name> is typing" while you write a reply (never a note): at most every 3 s.
+            if (!note && canReply && e.target.value.trim() && Date.now() - typedAt.current > 3000) {
+              typedAt.current = Date.now();
+              api(`${base}/conversations/${c.id}/typing`, { method: "POST" }).catch(() => {});
+            }
+          }}
           onPaste={(e) => {
             const f = e.clipboardData?.files?.[0];
             if (f) {
@@ -415,13 +456,39 @@ function Details({ c, me, act }) {
     <>
       <div className="side-sec">
         <div className="row" style={{ gap: 10 }}>
-          <Avatar initials={initialsOf(visitorName(c))} tone={toneOf(c.id)} size="lg" />
+          <VisitorAvatar c={c} size="lg" />
           <div style={{ minWidth: 0 }}>
             <div className="strong truncate">{visitorName(c)}</div>
             <div className="helper truncate">{v.email || t("No email given")}</div>
           </div>
         </div>
         <dl className="dl">
+          {presenceOf(c) && (
+            <>
+              <dt>{t("Visitor")}</dt>
+              <dd className={"presence " + presenceOf(c).state}>{presenceOf(c).label}</dd>
+            </>
+          )}
+          {c.continued_in && (
+            <>
+              <dt>{t("New chat")}</dt>
+              <dd>
+                <button type="button" className="link" onClick={() => go("inbox", c.continued_in)}>
+                  {t("Open")}
+                </button>
+              </dd>
+            </>
+          )}
+          {c.previous_id && (
+            <>
+              <dt>{t("Earlier chat")}</dt>
+              <dd>
+                <button type="button" className="link" onClick={() => go("inbox", c.previous_id)}>
+                  {t("Open")}
+                </button>
+              </dd>
+            </>
+          )}
           <dt>{t("Started")}</dt>
           <dd>{new Date(c.created_at).toLocaleString(locale(), { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</dd>
           {v.page && (
@@ -506,6 +573,18 @@ export function Inbox({ id }) {
   const params = new URLSearchParams({ view: "all", ...(agentFilter !== "all" ? { agent: agentFilter } : {}), ...(q ? { q } : {}) });
   const list = useResource(`${base}/conversations?${params}`, { poll: 5000, live: true });
   const conv = useResource(id ? `${base}/conversations/${id}` : null, { poll: 4000, live: (e) => e.c?.includes(id) });
+  // Visitors typing right now: conversation id → until when to show it.
+  const [typing, setTyping] = useState({});
+  useEffect(() => onTyping((d) => d.c && d.who === "visitor" && setTyping((x) => ({ ...x, [d.c]: Date.now() + 6000 }))), []);
+  const typingIn = (cid) => typing[cid] > Date.now();
+  useEffect(() => {
+    if (!Object.values(typing).some((until) => until > Date.now())) return;
+    const timer = setTimeout(() => setTyping((x) => ({ ...x })), 1000);
+    return () => clearTimeout(timer);
+  }, [typing]);
+  // Whatever just loaded carries the server's clock.
+  const serverNow = conv.data?.server_now || list.data?.[0]?.server_now;
+  if (serverNow) skew = Date.now() - Date.parse(serverNow);
   const all = list.data || [];
   const counts = Object.fromEntries(VIEWS.map((v) => [v.value, all.filter((c) => v.test(c, me)).length]));
   const rows = all.filter((c) => VIEWS.find((v) => v.value === view).test(c, me));
@@ -603,7 +682,7 @@ export function Inbox({ id }) {
               {q ? t("Try a different name or phrase.") : all.length ? t("Try another view.") : t("Conversations from your website widget appear here.")}
             </EmptyState>
           ) : (
-            rows.map((c) => <ConversationRow key={c.id} c={c} selected={c.id === id} me={me} />)
+            rows.map((c) => <ConversationRow key={c.id} c={c} selected={c.id === id} me={me} typing={typingIn(c.id)} />)
           )}
         </div>
       </div>
@@ -614,16 +693,36 @@ export function Inbox({ id }) {
         <section className="ib-conv" aria-label={t("Conversation with {name}", { name: visitorName(sel) })}>
           <div className="ib-conv-head">
             <IconButton icon="arrowLeft" label={t("Back to conversations")} className="show-sm" tooltip={false} onClick={() => go("inbox")} />
-            <Avatar initials={initialsOf(visitorName(sel))} tone={toneOf(sel.id)} />
+            <VisitorAvatar c={sel} />
             <div className="who">
               <div className="who-name truncate">{visitorName(sel)}</div>
-              <div className="who-sub truncate">{sel.subject || "New conversation"}</div>
+              <div className="who-sub truncate">
+                {typingIn(sel.id) ? (
+                  <span className="presence here">{t("Typing…")}</span>
+                ) : (
+                  <>
+                    {presenceOf(sel) && <span className={"presence " + presenceOf(sel).state}>{presenceOf(sel).label}</span>}
+                    {presenceOf(sel) && sel.subject ? " · " : ""}
+                    {sel.subject || (presenceOf(sel) ? "" : t("New conversation"))}
+                  </>
+                )}
+              </div>
             </div>
             <Handling c={sel} me={me} />
             <ActionMenu label={t("Conversation actions")} items={moreItems} trigger={(p) => <IconButton icon="more" label={t("Conversation actions")} {...p} />} />
             <IconButton icon="panel" label={wide() && showDetails ? t("Hide details") : t("Show details")} onClick={toggleDetails} aria-pressed={wide() ? showDetails : undefined} />
           </div>
           <Transcript c={sel} showSummary={sel.status === "human" && !hiddenSummary[sel.id]} onHideSummary={() => setHiddenSummary({ ...hiddenSummary, [sel.id]: true })} />
+          {typingIn(sel.id) && (
+            <div className="ib-typing" role="status">
+              <span className="typing-dots" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </span>
+              {t("{name} is typing…", { name: visitorName(sel) })}
+            </div>
+          )}
           <BottomBar c={sel} me={me} act={act} />
         </section>
       ) : (
