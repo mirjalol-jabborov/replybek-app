@@ -632,6 +632,7 @@ export default {
   "Welcome back.": "Qaytganingizdan xursandmiz.",
   "At least 10 characters.": "Kamida 10 ta belgi.",
   "Create workspace": "Ish maydonini yaratish",
+  "Chat with us · {count} unread": "Bizga yozing · {count} ta oʻqilmagan",
   "Started a new chat": "Yangi chat boshladi",
   "Left the chat": "Chatdan chiqdi",
   "In the chat now": "Hozir chatda",

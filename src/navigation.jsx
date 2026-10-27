@@ -5,6 +5,7 @@ import { useWorkspace } from "./workspace.jsx";
 import { Icon } from "./icons.jsx";
 import { Dialog, TextInput, IconButton, StatusBadge } from "./ui.jsx";
 import { AgentSelect } from "./pages/shared.jsx";
+import { supportChat, openSupportChat, identifySupportChat, onSupportUnread } from "./support.js";
 
 export const NAV_GROUPS = [
   {
@@ -66,9 +67,34 @@ export function WorkspaceBar({ page, onOpenNavigation }) {
           <span>{t("Quick search")}</span>
           <kbd>⌘ K</kbd>
         </button>
+        <SupportButton />
         <IconButton icon="help" label={t("Help")} onClick={() => openDialog("help")} />
       </div>
     </header>
+  );
+}
+
+/** Opens our support chat, with the number of replies the person hasn't read. Shown once it has loaded. */
+function SupportButton() {
+  const { user } = useWorkspace();
+  const [ready, setReady] = useState(() => supportChat());
+  const [unread, setUnread] = useState(() => window.Replybek?.unread?.() || 0);
+  useEffect(() => {
+    if (!ready) supportChat(() => setReady(true));
+  }, [ready]);
+  useEffect(() => identifySupportChat(user), [user.id, user.name, user.email]);
+  useEffect(() => onSupportUnread(setUnread), []);
+  if (!ready) return null;
+  const label = unread ? t("Chat with us · {count} unread", { count: unread }) : t("Chat with us");
+  return (
+    <span className="support-btn">
+      <IconButton icon="message" label={label} onClick={openSupportChat} />
+      {unread > 0 && (
+        <span className="support-count" aria-hidden="true">
+          {unread}
+        </span>
+      )}
+    </span>
   );
 }
 

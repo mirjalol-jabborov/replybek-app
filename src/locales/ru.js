@@ -642,6 +642,7 @@ export default {
   "Welcome back.": "С возвращением.",
   "At least 10 characters.": "Не менее 10 символов.",
   "Create workspace": "Создать пространство",
+  "Chat with us · {count} unread": "Написать нам · непрочитанных: {count}",
   "Started a new chat": "Перешёл в новый чат",
   "Left the chat": "Вышел из чата",
   "In the chat now": "Сейчас в чате",

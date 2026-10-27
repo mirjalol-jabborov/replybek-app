@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { api, setUnauthorizedHandler } from "./api.js";
 import { useStored } from "./hooks.js";
+import { resetSupportChat } from "./support.js";
 
 const Ctx = createContext(null);
 export const useSession = () => useContext(Ctx);
@@ -30,6 +31,7 @@ export function SessionProvider({ children }) {
       signUp: async (body) => accept(await api("/auth/register", { method: "POST", body })),
       signOut: async () => {
         await api("/auth/logout", { method: "POST" }).catch(() => {});
+        resetSupportChat();
         setState({ status: "out", user: null, workspaces: [] });
       },
       refresh: async () => accept(await api("/auth/me")),
