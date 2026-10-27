@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { t, tk } from "./i18n.js";
 import { go } from "./hooks.js";
 import { useWorkspace } from "./workspace.jsx";
+import { useSession } from "./session.jsx";
 import { Icon } from "./icons.jsx";
 import { Dialog, TextInput, IconButton, StatusBadge } from "./ui.jsx";
 import { AgentSelect } from "./pages/shared.jsx";
@@ -76,13 +77,17 @@ export function WorkspaceBar({ page, onOpenNavigation }) {
 
 /** Opens our support chat, with the number of replies the person hasn't read. Shown once it has loaded. */
 function SupportButton() {
-  const { user } = useWorkspace();
+  const { user, workspace } = useWorkspace();
+  const { workspaces } = useSession();
   const [ready, setReady] = useState(() => supportChat());
   const [unread, setUnread] = useState(() => window.Replybek?.unread?.() || 0);
   useEffect(() => {
     if (!ready) supportChat(() => setReady(true));
   }, [ready]);
-  useEffect(() => identifySupportChat(user), [user.id, user.name, user.email]);
+  useEffect(
+    () => identifySupportChat({ ...user, workspaceCount: workspaces.length }, workspace),
+    [user.id, user.name, user.email, user.avatar, workspace.id, workspace.name, workspace.plan, workspace.billing?.access, workspaces.length]
+  );
   useEffect(() => onSupportUnread(setUnread), []);
   if (!ready) return null;
   const label = unread ? t("Chat with us · {count} unread", { count: unread }) : t("Chat with us");

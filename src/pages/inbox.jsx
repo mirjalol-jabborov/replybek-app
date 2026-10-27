@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { t, tk, locale } from "../i18n.js";
 import { Icon } from "../icons.jsx";
 import { api, apiUrl } from "../api.js";
@@ -101,12 +101,15 @@ function presenceOf(c) {
   return null;
 }
 
-/** The visitor's avatar, with a green dot while they're in the chat. */
+/** The visitor's photo (when their website sent one) or initials, with a green dot while they're in the chat. */
 function VisitorAvatar({ c, size }) {
+  const { base } = useWorkspace();
   const here = presenceOf(c)?.state === "here";
+  // Lists carry only whether there's a photo; the photo itself comes from its own address.
+  const photo = c.visitor?.avatar || c.has_avatar ? apiUrl(`${base}/conversations/${c.id}/avatar`) : undefined;
   return (
     <span className="av-wrap">
-      <Avatar initials={initialsOf(visitorName(c))} tone={toneOf(c.id)} size={size} />
+      <Avatar initials={initialsOf(visitorName(c))} tone={toneOf(c.id)} size={size} src={photo} cover />
       {here && <span className="online-dot" title={t("In the chat now")} />}
     </span>
   );
@@ -489,6 +492,28 @@ function Details({ c, me, act }) {
               </dd>
             </>
           )}
+          {v.user_id && (
+            <>
+              <dt>{t("User ID")}</dt>
+              <dd className="mono truncate" title={v.user_id}>{v.user_id}</dd>
+            </>
+          )}
+          {v.phone && (
+            <>
+              <dt>{t("Phone")}</dt>
+              <dd>{v.phone}</dd>
+            </>
+          )}
+          {v.company && (v.company.name || v.company.id) && (
+            <>
+              <dt>{t("Company")}</dt>
+              <dd className="truncate" title={[v.company.name, v.company.id].filter(Boolean).join(" · ")}>
+                {v.company.name || v.company.id}
+                {v.company.plan && <span className="muted"> · {v.company.plan}</span>}
+                {v.company.website && <div className="helper truncate">{v.company.website}</div>}
+              </dd>
+            </>
+          )}
           <dt>{t("Started")}</dt>
           <dd>{new Date(c.created_at).toLocaleString(locale(), { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</dd>
           {v.page && (
@@ -507,6 +532,19 @@ function Details({ c, me, act }) {
           )}
         </dl>
       </div>
+      {v.attributes && Object.keys(v.attributes).length > 0 && (
+        <div className="side-sec">
+          <div className="eyebrow">{t("From their website")}</div>
+          <dl className="dl">
+            {Object.entries(v.attributes).map(([k, val]) => (
+              <Fragment key={k}>
+                <dt className="truncate" title={k}>{k}</dt>
+                <dd className="truncate" title={String(val)}>{val === true ? t("Yes") : val === false ? t("No") : val === null ? "—" : String(val)}</dd>
+              </Fragment>
+            ))}
+          </dl>
+        </div>
+      )}
       <div className="side-sec">
         <div className="eyebrow">{t("Conversation")}</div>
         <dl className="dl">

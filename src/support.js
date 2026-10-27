@@ -1,3 +1,4 @@
+import { getLang } from "./i18n.js";
 // Replybek's own support chat (our AI agent), on app.replybek.uz only: local and test copies of the
 // dashboard don't load it. It has no floating button here, where it would cover the Inbox's Send
 // button: the top bar's chat button (with the unread count) and the Help dialog open it.
@@ -24,10 +25,20 @@ export function supportChat(onReady) {
 
 export const openSupportChat = () => window.Replybek?.open();
 
-/** Names the signed-in person in the chat, so our team sees who they're talking to. */
-export function identifySupportChat(user) {
+/** Tells our team who's writing: the person, their workspace and plan. */
+export function identifySupportChat(user, workspace) {
+  const info = {
+    user_id: user.id,
+    name: user.name,
+    email: user.email,
+    avatar: user.avatar || undefined,
+    company: workspace ? { id: workspace.id, name: workspace.name, plan: workspace.plan, website: workspace.website || undefined } : undefined,
+    attributes: workspace
+      ? { role: workspace.role, billing: workspace.billing?.access || "off", language: getLang(), workspaces: user.workspaceCount }
+      : { language: getLang() },
+  };
   // An older cached widget may not have identify() yet.
-  const go = () => window.Replybek?.identify?.({ name: user.name, email: user.email });
+  const go = () => window.Replybek?.identify?.(info);
   if (!supportChat(go)) return;
   go();
 }
