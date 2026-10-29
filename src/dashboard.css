@@ -749,7 +749,8 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
-  margin-bottom: 12px;
+  /* room above, so the 2px hover lift isn't clipped by the scrolling page body */
+  margin: 8px 0 12px;
 }
 .source-shortcuts button {
   display: flex;
