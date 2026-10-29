@@ -89,6 +89,15 @@ button, input, select, textarea { font: inherit; color: inherit; letter-spacing:
 button { cursor: pointer; }
 :focus { outline: none; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* Scrollbars in the app's palette: the browser default is a heavy black bar that belongs to no theme. */
+* { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); background-clip: content-box; border: 3px solid transparent; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--fg-4); background-clip: content-box; }
+/* the strips that deliberately scroll without showing a bar */
+.seg::-webkit-scrollbar, .tabs::-webkit-scrollbar, .settings-nav .vtabs::-webkit-scrollbar { width: 0; height: 0; }
 h1, h2, h3, h4, p, ul, ol, dl, dd, figure { margin: 0; }
 ul, ol { padding: 0; }
 h1, h2, h3 { text-wrap: balance; font-weight: 600; }
@@ -225,6 +234,8 @@ button.metric:hover { background: var(--surface-muted); }
 .input:disabled { background: var(--surface-muted); color: var(--fg-3); }
 .input.sm { height: 30px; font-size: 13px; }
 .textarea { height: auto; padding: 8px 10px; resize: vertical; line-height: 1.5; min-height: 64px; overscroll-behavior: contain; }
+/* A box that follows its text: no scrollbar of its own inside an already scrolling pane. */
+.textarea-grow { resize: none; overflow-y: hidden; }
 .input-wrap { position: relative; display: flex; align-items: center; min-width: 0; width: 100%; }
 .input-wrap > .icon { position: absolute; left: 10px; color: var(--fg-4); pointer-events: none; }
 .input-wrap > .input { padding-left: 32px; }

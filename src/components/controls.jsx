@@ -93,8 +93,23 @@ export const TextInput = React.forwardRef(function TextInput({ id, label, hint, 
   );
 });
 
-export const Textarea = React.forwardRef(function Textarea({ id, label, hint, error, optional, layout, rows = 3, className = "", ...rest }, ref) {
-  const el = <textarea ref={ref} id={id} rows={rows} className={"textarea " + className} aria-invalid={error ? true : undefined} aria-describedby={label ? describedBy(id, hint, error) : undefined} {...rest} />;
+export const Textarea = React.forwardRef(function Textarea({ id, label, hint, error, optional, layout, rows = 3, autoGrow, className = "", ...rest }, ref) {
+  // autoGrow: the box follows its text instead of scrolling inside a pane that already scrolls.
+  // Long instructions otherwise leave two scrollbars side by side with the text boxed in between.
+  const inner = React.useRef(null);
+  const setRef = (node) => {
+    inner.current = node;
+    if (typeof ref === "function") ref(node);
+    else if (ref) ref.current = node;
+  };
+  const fit = () => {
+    const node = inner.current;
+    if (!autoGrow || !node) return;
+    node.style.height = "auto";
+    node.style.height = node.scrollHeight + "px";
+  };
+  React.useLayoutEffect(fit, [autoGrow, rest.value]);
+  const el = <textarea ref={setRef} id={id} rows={rows} onInput={autoGrow ? fit : undefined} className={"textarea " + (autoGrow ? "textarea-grow " : "") + className} aria-invalid={error ? true : undefined} aria-describedby={label ? describedBy(id, hint, error) : undefined} {...rest} />;
   if (!label) return el;
   return (
     <Field id={id} label={label} hint={hint} error={error} optional={optional} layout={layout}>

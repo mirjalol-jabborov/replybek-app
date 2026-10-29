@@ -382,6 +382,7 @@ export function Playground() {
                   label={t("Instructions")}
                   hint={t("Plain-language guidance the agent follows alongside its knowledge. Test questions use your unsaved changes.")}
                   rows={7}
+                  autoGrow
                   value={draft.instructions}
                   onChange={set("instructions")}
                   maxLength={8000}
@@ -409,6 +410,7 @@ export function Playground() {
                   label={t("Welcome message")}
                   hint={t("The first message visitors see in the widget.")}
                   rows={2}
+                  autoGrow
                   value={draft.welcome}
                   onChange={set("welcome")}
                   error={errors.welcome}
@@ -427,6 +429,7 @@ export function Playground() {
                     optional
                     hint={i === 1 ? t("Shown on pages in that language. If empty, visitors see the message above.") : undefined}
                     rows={2}
+                    autoGrow
                     value={draft.welcome_i18n[lang]}
                     onChange={(e) => setDraft((d) => ({ ...d, welcome_i18n: { ...d.welcome_i18n, [lang]: e.target.value } }))}
                     maxLength={500}
@@ -438,6 +441,7 @@ export function Playground() {
                   label={t("Fallback message")}
                   hint={t("Used when the knowledge doesn't answer the question.")}
                   rows={2}
+                  autoGrow
                   value={draft.fallback}
                   onChange={set("fallback")}
                   error={errors.fallback}
