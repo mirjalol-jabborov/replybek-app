@@ -1,4 +1,5 @@
 import { useWorkspace } from "../workspace.jsx";
+import { api } from "../api.js";
 import { t } from "../i18n.js";
 import { Select, SegmentedControl, Avatar, initialsOf, toneOf } from "../ui.jsx";
 
@@ -52,4 +53,19 @@ export function Loading({ label = "Loading…" }) {
       <div className="empty-body">{label}</div>
     </div>
   );
+}
+
+/**
+ * Back from Polar's checkout: asks the API to check with Polar itself rather than waiting for the
+ * webhook, which can be late and, on a server Polar cannot reach, never arrives at all. Reloads
+ * the workspace after every attempt, so the dashboard unlocks the moment the subscription is found.
+ */
+export async function claimCheckout(base, reload, tries = 5) {
+  for (let attempt = 0; attempt < tries; attempt++) {
+    const found = await api(`${base}/billing/sync`, { method: "POST" }).then((r) => Boolean(r?.status), () => false);
+    await reload();
+    if (found) return true;
+    await new Promise((done) => setTimeout(done, 2000));
+  }
+  return false;
 }

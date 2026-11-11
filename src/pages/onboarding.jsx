@@ -11,6 +11,7 @@ import { BrandMark, Wordmark } from "../components/brand.jsx";
 import { LogoPicker } from "./widgetPreview.jsx";
 import { Snippet } from "./install.jsx";
 import { fileSize } from "./knowledge.jsx";
+import { claimCheckout } from "./shared.jsx";
 import "../onboarding.css";
 
 const STEPS = [
@@ -585,14 +586,12 @@ function GoLive({ base, agent, host, onFinish }) {
   const [later, setLater] = useState(false);
   const [starting, setStarting] = useState(null);
   const [published, setPublished] = useState(agent);
-  // Back from Polar: the webhook usually lands within seconds.
+  // Back from Polar: ask Polar directly, rather than wait for its webhook.
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("checkout") !== "done") return;
     window.history.replaceState(null, "", window.location.pathname + window.location.hash);
-    toast(t("Card added on Polar"), { sub: t("Your free trial starts as soon as Polar confirms it.") });
-    let n = 0;
-    const timer = setInterval(() => (++n >= 8 ? clearInterval(timer) : summary.reload()), 2000);
-    return () => clearInterval(timer);
+    toast(t("Card added on Polar"), { sub: t("Checking your subscription with Polar.") });
+    claimCheckout(base, summary.reload, 8);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const showInstall = !needsTrial || later;
   useEffect(() => {

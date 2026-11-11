@@ -37,8 +37,9 @@ import {
   dateLong,
   capitalize,
 } from "../ui.jsx";
-import { AgentSelect } from "./shared.jsx";
+import { AgentSelect, claimCheckout } from "./shared.jsx";
 import { Snippet } from "./install.jsx";
+import { ChannelsTab } from "./channels.jsx";
 import { WidgetPreview, LogoPicker } from "./widgetPreview.jsx";
 
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -681,14 +682,13 @@ function BillingTab() {
   const billing = workspace.billing || {};
   const polar = billing.provider === "polar";
   const [opening, setOpening] = useState(false);
-  // Back from Polar checkout (?checkout=done): the webhook usually lands within seconds, so check a few times.
+  const [checking, setChecking] = useState(false);
+  // Back from Polar checkout (?checkout=done): ask Polar directly, rather than wait for its webhook.
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("checkout") !== "done") return;
     window.history.replaceState(null, "", window.location.pathname + window.location.hash);
-    toast(t("Checkout complete"), { sub: t("Your plan updates as soon as Polar confirms it.") });
-    let n = 0;
-    const timer = setInterval(() => (++n >= 5 ? clearInterval(timer) : summary.reload()), 2000);
-    return () => clearInterval(timer);
+    toast(t("Checkout complete"), { sub: t("Checking your subscription with Polar.") });
+    claimCheckout(base, summary.reload);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const usage = workspace.usage;
   const limits = workspace.limits;
@@ -720,6 +720,27 @@ function BillingTab() {
   return (
     <div className="stack" style={{ gap: 32 }}>
       {!polar && <Callout tone="info">{t("Billing isn't connected yet. Prices are placeholders, and switching plans only changes your workspace limits. No payment is taken.")}</Callout>}
+      {polar && (billing.access === "none" || billing.access === "ended") && (
+        <Callout
+          tone="info"
+          action={
+            <Button
+              size="sm"
+              loading={checking}
+              onClick={async () => {
+                setChecking(true);
+                const found = await claimCheckout(base, summary.reload, 1);
+                setChecking(false);
+                toast(found ? t("Subscription found") : t("Polar has no subscription for this workspace yet."), found ? {} : { tone: "warn" });
+              }}
+            >
+              {t("Check again")}
+            </Button>
+          }
+        >
+          {t("Already paid, but this workspace is still locked? Polar's confirmation can be delayed or lost.")}
+        </Callout>
+      )}
       {polar && billing.access === "paid" && billing.grace_ends_at && (
         <Callout tone="warn">{t("The last payment didn't go through. Update your card on Polar by {date}, or your agents stop answering.", { date: dateLong(billing.grace_ends_at) })}</Callout>
       )}
@@ -882,6 +903,7 @@ const TABS = [
   { value: "workspace", label: tk("Workspace"), icon: "building" },
   { value: "team", label: tk("Team"), icon: "users" },
   { value: "widget", label: tk("Widget"), icon: "droplet" },
+  { value: "channels", label: tk("Channels"), icon: "send" },
   { value: "billing", label: tk("Plan & billing"), icon: "card" },
 ];
 
@@ -898,7 +920,7 @@ export function Settings({ id, standalone = false }) {
     <>
       <PageHeader
         title={standalone ? t("Website widget") : t("Settings")}
-        description={standalone ? t("Make the chat yours, then add it to your website.") : `${workspace.name} · ${t("workspace, team, widget and plan")}`}
+        description={standalone ? t("Make the chat yours, then add it to your website.") : `${workspace.name} · ${t("workspace, team, channels and plan")}`}
       />
       <div className="page-body">
         <div className="page-inner">
@@ -924,6 +946,7 @@ export function Settings({ id, standalone = false }) {
                 {tab === "workspace" && <WorkspaceTab onDirty={mark("workspace")} />}
                 {tab === "team" && <TeamTab />}
                 {tab === "widget" && <WidgetTab onDirty={mark("widget")} />}
+                {tab === "channels" && <ChannelsTab />}
                 {tab === "billing" && <BillingTab />}
               </div>
             </div>
