@@ -853,6 +853,8 @@ export default {
   "What the agent can do in the system. Look-ups run on their own; changes ask the user to confirm.": "Agent tizimda nima qila oladi. Ko‘rishlar o‘zi ishlaydi; o‘zgarishlar foydalanuvchidan tasdiq so‘raydi.",
   "What the agent should ask for": "Agent nima so‘rashi kerak",
   "When to use": "Qachon ishlatish",
+  "Shown while it runs": "Ishlayotganda koʻrsatiladi",
+  "What the customer sees while the agent waits for this action, e.g. Checking your orders…": "AI agent shu amalni kutayotganda mijoz koʻradigan matn, masalan: Buyurtmalaringizni tekshiryapman…",
   "lookup": "ko‘rish",
   "name": "nomi",
   "response: how to read the answer (rows + columns, or a json pick). confirm (for changes): the card's title and lines.": "response: javobni qanday o‘qish (qatorlar + ustunlar yoki json pick). confirm (o‘zgarishlar uchun): karta sarlavhasi va qatorlari.",

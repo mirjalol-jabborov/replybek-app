@@ -241,6 +241,7 @@ const blankTool = () => ({
   original: {},
   name: "",
   when: "",
+  progress: "",
   description: "",
   kind: "read",
   inputs: [],
@@ -257,6 +258,7 @@ function fromTool(tool) {
     original: tool,
     name: tool.name || "",
     when: tool.when || "",
+    progress: tool.progress || "",
     description: tool.description || "",
     kind: tool.kind || "read",
     inputs: Object.entries(props).map(([name, def]) => ({
@@ -336,6 +338,7 @@ function toTool(f) {
     bindings,
     name: f.name.trim(),
     ...(f.when.trim() ? { when: f.when.trim() } : {}),
+    ...(f.progress.trim() ? { progress: f.progress.trim() } : {}),
     description: f.description.trim() || f.name.trim(),
     kind: f.kind,
     input: { ...f.original?.input, type: "object", properties, required },
@@ -465,6 +468,15 @@ function ToolEditor({
                 rows={2}
                 value={f.when}
                 onChange={set("when")}
+              />
+              <TextInput
+                id="te-progress"
+                label={t("Shown while it runs")}
+                optional
+                hint={t("What the customer sees while the agent waits for this action, e.g. Checking your orders…")}
+                maxLength={80}
+                value={f.progress}
+                onChange={set("progress")}
               />
               <TextInput
                 id="te-desc"

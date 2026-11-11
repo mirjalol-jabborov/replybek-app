@@ -863,6 +863,8 @@ export default {
   "What the agent can do in the system. Look-ups run on their own; changes ask the user to confirm.": "Что агент может делать в системе. Чтение выполняется само; изменения требуют подтверждения пользователя.",
   "What the agent should ask for": "Что агент должен спросить",
   "When to use": "Когда использовать",
+  "Shown while it runs": "Показывать во время выполнения",
+  "What the customer sees while the agent waits for this action, e.g. Checking your orders…": "Что видит клиент, пока ИИ-агент ждёт это действие, например: Проверяю ваши заказы…",
   "lookup": "чтение",
   "name": "имя",
   "response: how to read the answer (rows + columns, or a json pick). confirm (for changes): the card's title and lines.": "response: как читать ответ (строки + столбцы или json pick). confirm (для изменений): заголовок и строки карточки.",
