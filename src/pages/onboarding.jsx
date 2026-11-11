@@ -41,29 +41,32 @@ const Title = ({ children }) => (
  * First-run setup, like Chatbase: the owner enters their website; Replybek reads its name, logo,
  * colours and pages, creates the first agent from them, trains it on the site, lets the owner try it,
  * then starts the free trial (card on Polar) and hands over the embed code.
+ * `another`: the same steps for a further agent in a workspace that is already set up.
  */
-export function Onboarding() {
+export function Onboarding({ another = false }) {
   const { user } = useSession();
   const { base, workspace, summary, activeAgent, setActiveAgent, reloadAgents } = useWorkspace();
   const toast = useToast();
   // Back from Polar checkout, or reopened after the agent exists: continue at "Go live".
-  const [step, setStep] = useState(activeAgent ? "live" : "site");
+  const [step, setStep] = useState(activeAgent && !another ? "live" : "site");
   const [url, setUrl] = useState(workspace.website || "");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [reading, setReading] = useState(0);
   const [found, setFound] = useState(null);
-  const [draft, setDraft] = useState(() => (activeAgent ? fromAgent(activeAgent, workspace) : null));
-  const [agent, setAgent] = useState(activeAgent);
+  const [draft, setDraft] = useState(() => (activeAgent && !another ? fromAgent(activeAgent, workspace) : null));
+  const [agent, setAgent] = useState(another ? null : activeAgent);
   const [docs, setDocs] = useState([]);
   const docsInput = useRef(null);
   // The agent and uploaded files, once saved, so a failed upload can be retried without doubling anything.
   const made = useRef(null);
   const uploaded = useRef(new Set());
   const fromDocs = !found && docs.length > 0;
-  const lang = found?.language || activeAgent?.suggestion_default_language || (fromDocs ? getLang() : "en");
+  const lang = found?.language || (another ? null : activeAgent?.suggestion_default_language) || (fromDocs ? getLang() : "en");
 
   const finish = async () => {
+    // Another agent: the workspace was set up long ago. Before the agent exists, back to the list.
+    if (another) return go(made.current ? "overview" : "agents");
     try {
       await api(`${base}/onboarding/complete`, { method: "POST", body: found ? { website: found.host } : {} });
     } catch {
@@ -132,7 +135,7 @@ export function Onboarding() {
         }
       }
       // A Google sign-up's workspace was named provisionally; the business name from the site is better.
-      if (workspace.settings?.auto_named && draft.display_name.trim()) await api(base, { method: "PATCH", body: { name: draft.display_name.trim() } }).catch(() => {});
+      if (!another && workspace.settings?.auto_named && draft.display_name.trim()) await api(base, { method: "PATCH", body: { name: draft.display_name.trim() } }).catch(() => {});
       setAgent(saved);
       setActiveAgent(saved.id);
       reloadAgents();
@@ -172,15 +175,15 @@ export function Onboarding() {
           ))}
         </ol>
         <button type="button" className="onb-skip" onClick={finish}>
-          {step === "site" || step === "brand" ? t("Skip for now") : t("Finish later")}
+          {another && !made.current ? t("Cancel") : step === "site" || step === "brand" ? t("Skip for now") : t("Finish later")}
         </button>
       </header>
 
       <main className="onb-stage">
         {step === "site" && (
           <form className="onb-scene onb-hero" key="site" onSubmit={analyze} noValidate>
-            <p className="onb-hello">{t("Welcome, {name}", { name: user.name.split(" ")[0] })}</p>
-            <Title>{t("Let's build your AI agent")}</Title>
+            <p className="onb-hello">{another ? t("New agent") : t("Welcome, {name}", { name: user.name.split(" ")[0] })}</p>
+            <Title>{another ? t("Let's build another AI agent") : t("Let's build your AI agent")}</Title>
             <p className="onb-lead">{t("Enter your website. We'll do the rest.")}</p>
             <div className={"onb-urlbar" + (error ? " invalid" : "") + (busy ? " busy" : "")}>
               <Icon name="globe" size={18} />
@@ -246,6 +249,8 @@ export function Onboarding() {
                   <LogoPicker id="onb-logo" value={draft.logo} name={draft.display_name} onChange={(logo) => setDraft({ ...draft, logo })} onError={(m) => toast(m, { tone: "error" })} />
                 </div>
                 <TextInput id="onb-name" label={t("Business name")} value={draft.display_name} maxLength={80} onChange={(e) => setDraft({ ...draft, display_name: e.target.value })} />
+                {/* Next to the first agent, its name is how the team tells them apart. */}
+                {another && <TextInput id="onb-agent-name" label={t("Agent name")} value={draft.agent_name} maxLength={80} onChange={(e) => setDraft({ ...draft, agent_name: e.target.value })} />}
                 <div className="onb-field">
                   <span className="onb-label">{t("Chat colour")}</span>
                   <div className="onb-colors" role="radiogroup" aria-label={t("Chat colour")}>

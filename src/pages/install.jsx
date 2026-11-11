@@ -62,7 +62,7 @@ export function InstallDialog({ onClose, agentId: initial }) {
             style={{ marginRight: "auto" }}
             onClick={() => {
               onClose();
-              go("settings", "widget");
+              go("channels", "website");
             }}
           >
             {t("Appearance and allowed websites")}

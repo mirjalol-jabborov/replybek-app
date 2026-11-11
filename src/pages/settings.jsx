@@ -39,7 +39,6 @@ import {
 } from "../ui.jsx";
 import { AgentSelect, claimCheckout } from "./shared.jsx";
 import { Snippet } from "./install.jsx";
-import { ChannelsTab } from "./channels.jsx";
 import { WidgetPreview, LogoPicker } from "./widgetPreview.jsx";
 
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -416,7 +415,7 @@ function TeamTab() {
   );
 }
 
-function WidgetTab({ onDirty, standalone = false }) {
+export function WidgetTab({ onDirty, standalone = false }) {
   const { base, agents, activeAgent, setActiveAgent, workspace, reloadAgents, isAdmin, openDialog } = useWorkspace();
   const toast = useToast();
   const agent = activeAgent;
@@ -902,14 +901,8 @@ function BillingTab() {
 const TABS = [
   { value: "workspace", label: tk("Workspace"), icon: "building" },
   { value: "team", label: tk("Team"), icon: "users" },
-  { value: "widget", label: tk("Widget"), icon: "droplet" },
-  { value: "channels", label: tk("Channels"), icon: "send" },
   { value: "billing", label: tk("Plan & billing"), icon: "card" },
 ];
-
-export function WebsiteWidget() {
-  return <Settings id="widget" standalone />;
-}
 
 export function Settings({ id, standalone = false }) {
   const { workspace } = useWorkspace();
@@ -920,7 +913,7 @@ export function Settings({ id, standalone = false }) {
     <>
       <PageHeader
         title={standalone ? t("Website widget") : t("Settings")}
-        description={standalone ? t("Make the chat yours, then add it to your website.") : `${workspace.name} · ${t("workspace, team, channels and plan")}`}
+        description={standalone ? t("Make the chat yours, then add it to your website.") : `${workspace.name} · ${t("workspace, team and plan")}`}
       />
       <div className="page-body">
         <div className="page-inner">
@@ -945,8 +938,6 @@ export function Settings({ id, standalone = false }) {
               <div className="settings-panel" {...tabPanel("st", tab)}>
                 {tab === "workspace" && <WorkspaceTab onDirty={mark("workspace")} />}
                 {tab === "team" && <TeamTab />}
-                {tab === "widget" && <WidgetTab onDirty={mark("widget")} />}
-                {tab === "channels" && <ChannelsTab />}
                 {tab === "billing" && <BillingTab />}
               </div>
             </div>

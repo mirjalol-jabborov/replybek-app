@@ -22,7 +22,7 @@ export const NAV_GROUPS = [
       { id: "knowledge", label: tk("Knowledge"), icon: "book" },
       { id: "playground", label: tk("Playground"), icon: "flask" },
       { id: "integrations", label: tk("Integrations"), icon: "link" },
-      { id: "widget", label: tk("Website widget"), icon: "code" },
+      { id: "channels", label: tk("Channels"), icon: "send" },
     ],
   },
   {

@@ -5,7 +5,7 @@ import { api, apiUrl } from "../api.js";
 import { useWorkspace } from "../workspace.jsx";
 import { useResource, go } from "../hooks.js";
 import { onTyping } from "../live.js";
-import { Avatar, StatusBadge, Drawer, EmptyState, Sim, Button, IconButton, TextInput, Tabs, tabPanel, Select, ActionMenu, shortAge, timeAgo, clock, useToast, initialsOf, toneOf } from "../ui.jsx";
+import { Avatar, StatusBadge, Callout, Drawer, EmptyState, Sim, Button, IconButton, TextInput, Tabs, tabPanel, Select, ActionMenu, shortAge, timeAgo, clock, useToast, initialsOf, toneOf } from "../ui.jsx";
 import { AgentSelect, Loading } from "./shared.jsx";
 
 const VIEWS = [
@@ -94,7 +94,12 @@ function SourcesUsed({ sources }) {
 let skew = 0;
 const HERE_MS = 75000;
 const seenAgo = (c) => (c.visitor_seen_at ? Date.now() - skew - Date.parse(c.visitor_seen_at) : Infinity);
+// Where a conversation came from. Only the website widget knows whether the customer is still there;
+// elsewhere (Telegram) the last message is all there is.
+const CHANNEL_LABELS = { widget: "Website widget", telegram: "Telegram bot" };
+const channelLabel = (c) => t(CHANNEL_LABELS[c.channel || "widget"] || c.channel);
 function presenceOf(c) {
+  if (c.channel && c.channel !== "widget") return c.visitor_seen_at ? { state: "away", label: t("Last message {ago}", { ago: timeAgo(Date.parse(c.visitor_seen_at) + skew) }) } : null;
   if (c.left_at) return { state: "left", label: c.continued_in ? t("Started a new chat") : t("Left the chat") };
   if (seenAgo(c) < HERE_MS) return { state: "here", label: t("In the chat now") };
   if (c.visitor_seen_at) return { state: "away", label: t("Last seen {ago}", { ago: timeAgo(Date.parse(c.visitor_seen_at) + skew) }) };
@@ -398,7 +403,19 @@ function BottomBar({ c, me, act }) {
   const [noting, setNoting] = useState(false);
   useEffect(() => setNoting(false), [c.id, c.status]);
   const canReply = c.status === "human" && c.assignee_id === me;
-  if (canReply || noting) return <Composer c={c} me={me} forceNote={noting} onCancelNote={() => setNoting(false)} act={act} />;
+  // A Telegram chat whose bot was disconnected: a reply would be saved here but never reach the customer.
+  const cutOff = c.channel && c.channel !== "widget" && c.channel_status && c.channel_status !== "active";
+  if (canReply || noting)
+    return (
+      <>
+        {cutOff && !noting && (
+          <div className="composer-warning">
+            <Callout tone="warn">{t("This chat came in through {channel}, which is no longer connected. Replies won't reach the customer.", { channel: channelLabel(c) })}</Callout>
+          </div>
+        )}
+        <Composer c={c} me={me} forceNote={noting} onCancelNote={() => setNoting(false)} act={act} />
+      </>
+    );
   const take = () => act("takeover", null, t("You're handling this conversation"), t("AI replies are paused until you hand it back."));
   let text;
   let action;
@@ -462,7 +479,7 @@ function Details({ c, me, act }) {
           <VisitorAvatar c={c} size="lg" />
           <div style={{ minWidth: 0 }}>
             <div className="strong truncate">{visitorName(c)}</div>
-            <div className="helper truncate">{v.email || t("No email given")}</div>
+            <div className="helper truncate">{v.email || (v.telegram_username ? `@${v.telegram_username}` : t("No email given"))}</div>
           </div>
         </div>
         <dl className="dl">
@@ -555,7 +572,7 @@ function Details({ c, me, act }) {
           <dt>{t("Agent")}</dt>
           <dd className="truncate">{agent?.name || "—"}</dd>
           <dt>{t("Channel")}</dt>
-          <dd>{t("Website widget")}</dd>
+          <dd>{channelLabel(c)}</dd>
         </dl>
         <Select
           id={"assign-" + c.id}

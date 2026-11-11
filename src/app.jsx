@@ -19,12 +19,13 @@ import { Loading } from "./pages/shared.jsx";
 import { supportChat, openSupportChat } from "./support.js";
 import { AuthPage } from "./pages/auth.jsx";
 import { Overview } from "./pages/overview.jsx";
-import { Agents, CreateAgentDialog } from "./pages/agents.jsx";
+import { Agents } from "./pages/agents.jsx";
 import { Knowledge, AddKnowledgeDialog } from "./pages/knowledge.jsx";
 import { Playground } from "./pages/playground.jsx";
 import { Inbox } from "./pages/inbox.jsx";
 import { Analytics } from "./pages/analytics.jsx";
-import { Settings, WebsiteWidget } from "./pages/settings.jsx";
+import { Settings } from "./pages/settings.jsx";
+import { Channels } from "./pages/channels.jsx";
 import { InstallDialog } from "./pages/install.jsx";
 import { Integrations } from "./pages/integrations.jsx";
 import { Onboarding } from "./pages/onboarding.jsx";
@@ -42,7 +43,7 @@ const PAGES = {
   analytics: Analytics,
   integrations: Integrations,
   settings: Settings,
-  widget: WebsiteWidget,
+  channels: Channels,
 };
 
 function WorkspaceMenu({ onNavigate }) {
@@ -286,7 +287,7 @@ function HelpDialog({ onClose }) {
     [t("Create an agent"), t("Name it and describe what it should help with."), () => go("agents")],
     [t("Add knowledge"), t("Websites, files and Q&A. The agent answers only from these."), () => go("knowledge")],
     [t("Test answers"), t("Ask questions in the Playground and open the sources used."), () => go("playground")],
-    [t("Install the widget"), t("Publish the agent and paste one script tag into your site."), () => go("widget")],
+    [t("Install the widget"), t("Publish the agent and paste one script tag into your site."), () => go("channels", "website")],
     [t("Handle conversations"), t("Take over in the Inbox when a customer needs a person."), () => go("inbox")],
   ];
   return (
@@ -355,6 +356,14 @@ function HelpDialog({ onClose }) {
 // the API would refuse.
 const LIMITED_DIALOGS = { createAgent: "agents", addKnowledge: "sources" };
 
+function NewAgent({ onClose }) {
+  useEffect(() => {
+    onClose();
+    go("onboarding", "new");
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  return null;
+}
+
 function Dialogs() {
   const { dialog, closeDialog, workspace, locked } = useWorkspace();
   if (!dialog) return null;
@@ -398,7 +407,8 @@ function Dialogs() {
       />
     );
   }
-  if (dialog.name === "createAgent") return <CreateAgentDialog onClose={closeDialog} />;
+  // A new agent is made the same way as the first one: the full-screen setup, from the website.
+  if (dialog.name === "createAgent") return <NewAgent onClose={closeDialog} />;
   if (dialog.name === "install") return <InstallDialog onClose={closeDialog} agentId={dialog.agentId} />;
   if (dialog.name === "addKnowledge") return <AddKnowledgeDialog {...dialog} onClose={closeDialog} />;
   if (dialog.name === "search") return <CommandPalette onClose={closeDialog} />;
@@ -442,6 +452,8 @@ function Workspace() {
   const needsOnboarding = roleAdmin && summary.data && agentsLoaded && !workspace.settings?.onboarded && (agents.length === 0 || workspace.billing?.access === "none");
   useEffect(() => {
     if (needsOnboarding && route.page !== "onboarding") go("onboarding");
+    // The old "Website widget" page (bookmarks, links) is the website card on Channels now.
+    else if (route.page === "widget") go("channels", "website");
   }, [needsOnboarding, route.page]);
   const [navOpen, setNavOpen] = useState(false);
   const [sidebarPreference, setSidebarPreference] = useState(() => {
@@ -478,7 +490,11 @@ function Workspace() {
     document.title = `${t(NAV.find((n) => n.id === page).label)} · ${workspace.name} · Replybek`;
   }, [page, workspace.name]);
   // Onboarding picks its step from the agents and billing state, so wait for both (e.g. back from Polar).
-  if (route.page === "onboarding" || needsOnboarding) return agentsLoaded && summary.data ? <Onboarding /> : <Loading label={t("Loading Replybek…")} />;
+  if (route.page === "onboarding" || needsOnboarding) {
+    // "#/onboarding/new": another agent, once the workspace is set up.
+    const another = !needsOnboarding && route.id === "new";
+    return agentsLoaded && summary.data ? <Onboarding key={another ? "new" : "first"} another={another} /> : <Loading label={t("Loading Replybek…")} />;
+  }
   return (
     <div className={"shell" + (sidebarCollapsed ? " sidebar-collapsed" : "")}>
       <Sidebar page={page} collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
