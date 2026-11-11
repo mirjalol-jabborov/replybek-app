@@ -244,6 +244,41 @@ export function Combobox(props) {
   );
 }
 
+/**
+ * SearchMenu: pick one item from a long list, with a search field, behind your own trigger.
+ * options: like Select's (keywords are searched too). trigger: (props) => element; spread props onto a button.
+ */
+export function SearchMenu({ trigger, options, onPick, searchPlaceholder, placement = "bottom-start", minWidth = 240 }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const id = useId();
+  const close = (reason) => {
+    setOpen(false);
+    if (RETURN_FOCUS.includes(reason) && ref.current) ref.current.focus();
+  };
+  return (
+    <>
+      {trigger({ ref, onClick: () => setOpen((o) => !o), "aria-haspopup": "listbox", "aria-expanded": open, "aria-controls": open ? id : undefined })}
+      {open && (
+        <SearchList
+          id={id}
+          anchorRef={ref}
+          options={options}
+          value={null}
+          placement={placement}
+          minWidth={minWidth}
+          searchPlaceholder={searchPlaceholder ?? t("Search")}
+          onClose={close}
+          onPick={(v) => {
+            close("select");
+            onPick(v);
+          }}
+        />
+      )}
+    </>
+  );
+}
+
 function SearchList({ id, anchorRef, options, value, onPick, onClose, placement, minWidth, searchPlaceholder }) {
   const ref = useRef(null);
   const inputRef = useRef(null);
