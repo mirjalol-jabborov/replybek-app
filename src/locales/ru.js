@@ -1392,4 +1392,13 @@ export default {
   "Your subscription has ended. Choose a plan to keep using AI features.": "Подписка закончилась. Выберите тариф, чтобы продолжить пользоваться функциями ИИ.",
   "Your subscription has ended. Choose a plan to make changes.": "Подписка закончилась. Выберите тариф, чтобы вносить изменения.",
   "{count} of {total} free test messages left": "Осталось бесплатных тестовых сообщений: {count} из {total}",
+  "Your last payment didn't go through. Update your card on Polar to make changes.": "Последний платёж не прошёл. Обновите карту в Polar, чтобы вносить изменения.",
+  "Your last payment didn't go through. Update your card on Polar to keep your agents answering.": "Последний платёж не прошёл. Обновите карту в Polar, чтобы ИИ-агенты продолжали отвечать.",
+  "Your last payment didn't go through.": "Последний платёж не прошёл.",
+  "Update your card on Polar to add agents and knowledge again.": "Обновите карту в Polar, чтобы снова добавлять ИИ-агентов и знания.",
+  "Update card": "Обновить карту",
+  "Update your card on Polar to keep using AI features.": "Обновите карту в Polar, чтобы продолжить пользоваться функциями ИИ.",
+  "The last payment didn't go through. Update your card on Polar by {date}, or your agents stop answering.": "Последний платёж не прошёл. Обновите карту в Polar до {date}, иначе ИИ-агенты перестанут отвечать.",
+  "Your agents pass new chats to your team instead of answering, until you update your card on Polar.": "Пока вы не обновите карту в Polar, ИИ-агенты не отвечают сами, а передают новые чаты команде.",
+  "Update card on Polar": "Обновить карту в Polar",
 };

@@ -1382,4 +1382,13 @@ export default {
   "Your subscription has ended. Choose a plan to keep using AI features.": "Obunangiz tugadi. AI imkoniyatlaridan foydalanish uchun tarif tanlang.",
   "Your subscription has ended. Choose a plan to make changes.": "Obunangiz tugadi. O‘zgartirish kiritish uchun tarif tanlang.",
   "{count} of {total} free test messages left": "{total} ta bepul sinov xabaridan {count} tasi qoldi",
+  "Your last payment didn't go through. Update your card on Polar to make changes.": "Oxirgi to‘lov o‘tmadi. O‘zgartirish kiritish uchun Polar’da kartangizni yangilang.",
+  "Your last payment didn't go through. Update your card on Polar to keep your agents answering.": "Oxirgi to‘lov o‘tmadi. AI agentlar javob berishda davom etishi uchun Polar’da kartangizni yangilang.",
+  "Your last payment didn't go through.": "Oxirgi to‘lov o‘tmadi.",
+  "Update your card on Polar to add agents and knowledge again.": "AI agentlar va bilimlarni yana qo‘shish uchun Polar’da kartangizni yangilang.",
+  "Update card": "Kartani yangilash",
+  "Update your card on Polar to keep using AI features.": "AI imkoniyatlaridan foydalanishda davom etish uchun Polar’da kartangizni yangilang.",
+  "The last payment didn't go through. Update your card on Polar by {date}, or your agents stop answering.": "Oxirgi to‘lov o‘tmadi. Polar’da kartangizni {date} gacha yangilang, aks holda AI agentlar javob berishni to‘xtatadi.",
+  "Your agents pass new chats to your team instead of answering, until you update your card on Polar.": "Polar’da kartangizni yangilamaguningizcha AI agentlar o‘zi javob bermaydi, yangi chatlarni jamoangizga o‘tkazadi.",
+  "Update card on Polar": "Polar’da kartani yangilash",
 };
