@@ -247,7 +247,7 @@ function Sidebar({ page, onNavigate, collapsed, onToggle }) {
           >
             {access === "trial" && workspace.billing.renews_at && <span className="usage-trial">{t("Free trial: {count} days left", { count: trialDaysLeft(workspace.billing.renews_at) })}</span>}
             {access === "none" && <span className="usage-trial">{t("Free trial not started")}</span>}
-            {access === "ended" && <span className="usage-trial ended">{t("Subscription ended")}</span>}
+            {access === "ended" && <span className="usage-trial ended">{workspace.billing.status === "past_due" ? t("Payment overdue") : t("Subscription ended")}</span>}
             <span className="row" style={{ justifyContent: "space-between" }}>
               <span>{t("AI messages this month")}</span>
               <span className="num">{pct(usage.messages, limits.messages)}%</span>
@@ -360,13 +360,15 @@ function Dialogs() {
   if (!dialog) return null;
   const kind = LIMITED_DIALOGS[dialog.name];
   const ended = workspace.billing?.access === "ended";
+  // Ended because a renewal payment kept failing: the fix is a new card, not a new plan.
+  const overdue = ended && workspace.billing.status === "past_due";
   // Read-only until the trial starts (or a plan is chosen again): same idea as the limits below.
   if (kind && locked) {
     return (
       <Confirm
-        title={ended ? t("Your subscription has ended.") : t("Start your free trial first")}
-        body={ended ? t("Choose a plan to add agents and knowledge again.") : t("Start your 7-day free trial to add agents and knowledge. You can view everything until then.")}
-        confirmLabel={ended ? t("Choose a plan") : t("Start free trial")}
+        title={overdue ? t("Your last payment didn't go through.") : ended ? t("Your subscription has ended.") : t("Start your free trial first")}
+        body={overdue ? t("Update your card on Polar to add agents and knowledge again.") : ended ? t("Choose a plan to add agents and knowledge again.") : t("Start your 7-day free trial to add agents and knowledge. You can view everything until then.")}
+        confirmLabel={overdue ? t("Update card") : ended ? t("Choose a plan") : t("Start free trial")}
         onClose={closeDialog}
         onConfirm={() => go("settings", "billing")}
       />
@@ -376,9 +378,9 @@ function Dialogs() {
   if (dialog.name === "trial") {
     return (
       <Confirm
-        title={ended ? t("Your subscription has ended.") : t("Start your 7-day free trial")}
-        body={dialog.message || (ended ? t("Choose a plan to keep using AI features.") : t("AI features need the free trial. Add a card on Polar; nothing is charged for 7 days."))}
-        confirmLabel={ended ? t("Choose a plan") : t("Start free trial")}
+        title={overdue ? t("Your last payment didn't go through.") : ended ? t("Your subscription has ended.") : t("Start your 7-day free trial")}
+        body={dialog.message || (overdue ? t("Update your card on Polar to keep using AI features.") : ended ? t("Choose a plan to keep using AI features.") : t("AI features need the free trial. Add a card on Polar; nothing is charged for 7 days."))}
+        confirmLabel={overdue ? t("Update card") : ended ? t("Choose a plan") : t("Start free trial")}
         onClose={closeDialog}
         onConfirm={() => go("settings", "billing")}
       />
@@ -470,7 +472,8 @@ function Workspace() {
   const page = PAGES[route.page] ? route.page : "overview";
   const Page = PAGES[page];
   // The trial and subscription banners already say why agents aren't answering; this one is for a used-up allowance.
-  const messagesOut = !["none", "ended"].includes(workspace.billing?.access) && workspace.limits && workspace.usage?.messages >= workspace.limits.messages;
+  const billing = workspace.billing;
+  const messagesOut = !["none", "ended"].includes(billing?.access) && workspace.limits && workspace.usage?.messages >= workspace.limits.messages;
   useEffect(() => {
     document.title = `${t(NAV.find((n) => n.id === page).label)} · ${workspace.name} · Replybek`;
   }, [page, workspace.name]);
@@ -482,7 +485,21 @@ function Workspace() {
       <div className="main">
         <WorkspaceBar page={page} onOpenNavigation={() => setNavOpen(true)} />
         <AgentWorkflow page={page} />
-        {workspace.billing?.access === "ended" && page !== "settings" && (
+        {billing?.access === "paid" && billing.grace_ends_at && page !== "settings" && (
+          <div className="billing-banner">
+            <Callout tone="warn" action={<Button size="sm" variant="primary" onClick={() => go("settings", "billing")}>{t("Update card")}</Button>}>
+              {t("The last payment didn't go through. Update your card on Polar by {date}, or your agents stop answering.", { date: dateLong(billing.grace_ends_at) })}
+            </Callout>
+          </div>
+        )}
+        {billing?.access === "ended" && billing.status === "past_due" && page !== "settings" && (
+          <div className="billing-banner">
+            <Callout tone="bad" action={<Button size="sm" variant="primary" onClick={() => go("settings", "billing")}>{t("Update card")}</Button>}>
+              {t("Your last payment didn't go through.")} {t("Your agents pass new chats to your team instead of answering, until you update your card on Polar.")} {t("Until then you can view everything but not change it.")}
+            </Callout>
+          </div>
+        )}
+        {billing?.access === "ended" && billing.status !== "past_due" && page !== "settings" && (
           <div className="billing-banner">
             <Callout tone="bad" action={<Button size="sm" variant="primary" onClick={() => go("settings", "billing")}>{t("Choose a plan")}</Button>}>
               {t("Your subscription has ended.")} {t("Your agents pass new chats to your team instead of answering, until you choose a plan.")} {t("Until then you can view everything but not change it.")}

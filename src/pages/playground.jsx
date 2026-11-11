@@ -4,9 +4,10 @@ import { Icon } from "../icons.jsx";
 import { api } from "../api.js";
 import { questionLists, questionsFor } from "../suggestions.js";
 import { SuggestionEditor } from "./suggestion-editor.jsx";
+import { WIDGET_LANGUAGES, languageLabel, languageOptions, orderedLanguages, isAuto } from "../widget-languages.js";
 import { useWorkspace } from "../workspace.jsx";
 import { go } from "../hooks.js";
-import { TextInput, Textarea, SwitchField, SegmentedControl, Button, PageHeader, Field, EmptyState, StatusBadge, useToast, clock } from "../ui.jsx";
+import { TextInput, Textarea, SwitchField, SegmentedControl, Button, PageHeader, Field, EmptyState, StatusBadge, useToast, clock, SearchMenu } from "../ui.jsx";
 
 const TONES = [
   {
@@ -26,7 +27,7 @@ const TONES = [
   },
 ];
 const FIELDS = ["name", "purpose", "instructions", "tone", "welcome", "welcome_i18n", "fallback", "handoff", "suggested_questions_i18n", "suggestion_default_language"];
-const welcomes = (a) => ({ uz: a.welcome_i18n?.uz || "", ru: a.welcome_i18n?.ru || "" });
+const welcomes = (a) => ({ ...(a.welcome_i18n || {}) });
 const pick = (a) => Object.fromEntries(FIELDS.map((k) => [k, k === "suggested_questions_i18n" ? questionLists(a) : k === "welcome_i18n" ? welcomes(a) : k === "suggestion_default_language" ? a[k] || "en" : a[k]]));
 
 function SourcesUsed({ sources }) {
@@ -402,7 +403,7 @@ export function Playground() {
                   />
                 </Field>
               </div>
-              <SuggestionEditor key={agent.id} base={base} agent={agent} value={draft.suggested_questions_i18n} onChange={set("suggested_questions_i18n")} disabled={!isAdmin} language={questionLanguage} onLanguage={setQuestionLanguage} defaultLanguage={draft.suggestion_default_language} onDefaultLanguage={set("suggestion_default_language")} />
+              <SuggestionEditor key={agent.id} base={base} agent={agent} value={draft.suggested_questions_i18n} onChange={set("suggested_questions_i18n")} disabled={!isAdmin} language={questionLanguage} onLanguage={setQuestionLanguage} defaultLanguage={draft.suggestion_default_language} onDefaultLanguage={set("suggestion_default_language")} marks={agent.auto_translations?.questions} saved={questionLists(agent)} />
               <div className="cfg-sec">
                 <h2 className="cfg-sec-title">{t("Messages")}</h2>
                 <Textarea
@@ -417,25 +418,69 @@ export function Playground() {
                   maxLength={500}
                   disabled={!isAdmin}
                 />
-                {/* The same welcome for pages in Uzbek and Russian; empty shows the one above. */}
-                {[
-                  ["uz", t("In Uzbek")],
-                  ["ru", t("In Russian")],
-                ].map(([lang, label], i) => (
-                  <Textarea
-                    key={lang}
-                    id={`pg-welcome-${lang}`}
-                    label={label}
-                    optional
-                    hint={i === 1 ? t("Shown on pages in that language. If empty, visitors see the message above.") : undefined}
-                    rows={2}
-                    autoGrow
-                    value={draft.welcome_i18n[lang]}
-                    onChange={(e) => setDraft((d) => ({ ...d, welcome_i18n: { ...d.welcome_i18n, [lang]: e.target.value } }))}
-                    maxLength={500}
-                    disabled={!isAdmin}
+                {/* The welcome above is in the default language. Pages in another language show its
+                    translation: the owner's own, or one the AI made (marked) until the owner edits it. */}
+                {orderedLanguages(Object.keys(draft.welcome_i18n), null)
+                  .filter((lang) => lang !== draft.suggestion_default_language)
+                  .map((lang) => {
+                    const auto = isAuto(agent.auto_translations?.welcome, agent.welcome_i18n, draft.welcome_i18n, lang);
+                    return (
+                      <div className="welcome-translation" key={lang}>
+                        <Textarea
+                          id={`pg-welcome-${lang}`}
+                          label={
+                            <>
+                              {languageLabel(lang)} {auto && <span className="badge">{t("Auto-translated")}</span>}
+                            </>
+                          }
+                          hint={
+                            auto
+                              ? t("Translated by AI for pages in this language. Edit it to make it yours.")
+                              : !draft.welcome_i18n[lang]
+                                ? t("Empty: visitors see the message above. Remove it to use an automatic translation instead.")
+                                : undefined
+                          }
+                          rows={2}
+                          autoGrow
+                          value={draft.welcome_i18n[lang]}
+                          onChange={(e) => setDraft((d) => ({ ...d, welcome_i18n: { ...d.welcome_i18n, [lang]: e.target.value } }))}
+                          maxLength={500}
+                          disabled={!isAdmin}
+                        />
+                        {isAdmin && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            icon="x"
+                            onClick={() =>
+                              setDraft((d) => {
+                                const next = { ...d.welcome_i18n };
+                                delete next[lang];
+                                return { ...d, welcome_i18n: next };
+                              })
+                            }
+                          >
+                            {t("Remove {language}", { language: languageLabel(lang) })}
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
+                {isAdmin && (
+                  <div className="welcome-add">
+                  <SearchMenu
+                    searchPlaceholder={t("Search languages")}
+                    options={languageOptions(WIDGET_LANGUAGES.filter((lang) => lang !== draft.suggestion_default_language && !Object.hasOwn(draft.welcome_i18n, lang)))}
+                    onPick={(lang) => setDraft((d) => ({ ...d, welcome_i18n: { ...d.welcome_i18n, [lang]: "" } }))}
+                    trigger={(p) => (
+                      <Button size="sm" variant="ghost" icon="plus" {...p}>
+                        {t("Welcome in another language")}
+                      </Button>
+                    )}
                   />
-                ))}
+                  </div>
+                )}
+                <p className="helper">{t("Pages in a language without its own welcome get an automatic translation of the message above.")}</p>
                 <Textarea
                   id="pg-fallback"
                   label={t("Fallback message")}

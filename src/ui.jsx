@@ -2,7 +2,7 @@
 import { t, locale } from "./i18n.js";
 export { Dialog, Drawer, Confirm, Popover, Tooltip } from "./components/overlay.jsx";
 export { Button, IconButton, Field, TextInput, Textarea, Switch, SwitchField, SegmentedControl, Tabs, tabPanel, StatusBadge, Avatar, Sim, Callout, EmptyState, PageHeader, Section, MetricsStrip, Table, ToastProvider, useToast } from "./components/controls.jsx";
-export { Select, Combobox, ActionMenu } from "./components/menus.jsx";
+export { Select, Combobox, ActionMenu, SearchMenu } from "./components/menus.jsx";
 
 export const fmt = (n) => Number(n || 0).toLocaleString(locale());
 export const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);

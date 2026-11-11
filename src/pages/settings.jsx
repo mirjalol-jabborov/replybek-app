@@ -711,18 +711,24 @@ function BillingTab() {
   const current = PLANS.find((p) => p.id === workspace.plan);
   const status = BILLING_STATUS[billing.status === "active" && billing.cancel_at_period_end ? "canceling" : billing.status] || null;
   // With Polar, the current plan only counts once its trial or subscription is running; until then every plan is a checkout.
-  const paid = !polar || billing.access === "paid" || billing.access === "trial";
+  // Past due beyond the grace period: the subscription still exists, it only needs a working card.
+  const overdue = polar && billing.access === "ended" && billing.status === "past_due";
+  const paid = !polar || billing.access === "paid" || billing.access === "trial" || overdue;
   const fresh = polar && billing.access === "none";
   const badge = status || (fresh ? { label: tk("Trial not started"), tone: "" } : null);
   const trialing = polar && billing.access === "trial";
   return (
     <div className="stack" style={{ gap: 32 }}>
       {!polar && <Callout tone="info">{t("Billing isn't connected yet. Prices are placeholders, and switching plans only changes your workspace limits. No payment is taken.")}</Callout>}
-      {polar && billing.status === "past_due" && <Callout tone="warn">{t("The last payment didn't go through. Update your card on Polar to keep your plan.")}</Callout>}
+      {polar && billing.access === "paid" && billing.grace_ends_at && (
+        <Callout tone="warn">{t("The last payment didn't go through. Update your card on Polar by {date}, or your agents stop answering.", { date: dateLong(billing.grace_ends_at) })}</Callout>
+      )}
       {fresh && <Callout tone="info">{t("Start your 7-day free trial to put your agent live on your website. You'll add a card on Polar; nothing is charged for 7 days, and you can cancel any time before then.")}</Callout>}
       {polar && billing.access === "ended" && (
         <Callout tone="bad">
-          {t("Your subscription has ended.")} {t("Your agents pass new chats to your team instead of answering, until you choose a plan.")}
+          {billing.status === "past_due"
+            ? `${t("Your last payment didn't go through.")} ${t("Your agents pass new chats to your team instead of answering, until you update your card on Polar.")}`
+            : `${t("Your subscription has ended.")} ${t("Your agents pass new chats to your team instead of answering, until you choose a plan.")}`}
         </Callout>
       )}
       <Section
@@ -745,7 +751,7 @@ function BillingTab() {
         {polar && billing.can_manage && (
           <div className="row" style={{ marginBottom: 16 }}>
             <Button
-              variant="secondary"
+              variant={overdue ? "primary" : "secondary"}
               disabled={opening}
               onClick={async () => {
                 setOpening(true);
@@ -758,7 +764,7 @@ function BillingTab() {
                 }
               }}
             >
-              {t("Manage billing on Polar")}
+              {overdue ? t("Update card on Polar") : t("Manage billing on Polar")}
             </Button>
           </div>
         )}

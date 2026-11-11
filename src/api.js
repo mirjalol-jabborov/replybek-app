@@ -62,6 +62,7 @@ export function limitMessage(data) {
 
 /** The dashboard's own wording (in the user's language) for a billing refusal; null for anything else. */
 export function trialMessage(data) {
+  if (data?.code === "subscription_ended" && data.overdue) return data.reason === "read_only" ? t("Your last payment didn't go through. Update your card on Polar to make changes.") : t("Your last payment didn't go through. Update your card on Polar to keep your agents answering.");
   if (data?.code === "subscription_ended") return data.reason === "read_only" ? t("Your subscription has ended. Choose a plan to make changes.") : t("Your subscription has ended. Choose a plan to keep using AI features.");
   if (data?.code !== "trial_required") return null;
   if (data.reason === "preview_used") return t("You've used the free test messages. Start your 7-day free trial to keep testing.");
