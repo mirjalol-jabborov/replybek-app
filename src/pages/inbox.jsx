@@ -96,7 +96,7 @@ const HERE_MS = 75000;
 const seenAgo = (c) => (c.visitor_seen_at ? Date.now() - skew - Date.parse(c.visitor_seen_at) : Infinity);
 // Where a conversation came from. Only the website widget knows whether the customer is still there;
 // elsewhere (Telegram) the last message is all there is.
-const CHANNEL_LABELS = { widget: "Website widget", telegram: "Telegram bot" };
+const CHANNEL_LABELS = { widget: "Website widget", telegram: "Telegram bot", telegram_business: "Telegram Business" };
 const channelLabel = (c) => t(CHANNEL_LABELS[c.channel || "widget"] || c.channel);
 function presenceOf(c) {
   if (c.channel && c.channel !== "widget") return c.visitor_seen_at ? { state: "away", label: t("Last message {ago}", { ago: timeAgo(Date.parse(c.visitor_seen_at) + skew) }) } : null;
@@ -405,12 +405,19 @@ function BottomBar({ c, me, act }) {
   const canReply = c.status === "human" && c.assignee_id === me;
   // A Telegram chat whose bot was disconnected: a reply would be saved here but never reach the customer.
   const cutOff = c.channel && c.channel !== "widget" && c.channel_status && c.channel_status !== "active";
+  // Telegram Business: the bot may write only within 24 hours of the customer's last message.
+  const windowClosed = !cutOff && c.reply_until && new Date(c.reply_until) < new Date(c.server_now || Date.now());
   if (canReply || noting)
     return (
       <>
         {cutOff && !noting && (
           <div className="composer-warning">
             <Callout tone="warn">{t("This chat came in through {channel}, which is no longer connected. Replies won't reach the customer.", { channel: channelLabel(c) })}</Callout>
+          </div>
+        )}
+        {windowClosed && !noting && (
+          <div className="composer-warning">
+            <Callout tone="warn">{t("The customer last wrote more than 24 hours ago, and Telegram lets the bot reply only within 24 hours. Write to them from your own Telegram.")}</Callout>
           </div>
         )}
         <Composer c={c} me={me} forceNote={noting} onCancelNote={() => setNoting(false)} act={act} />
@@ -448,6 +455,14 @@ function BottomBar({ c, me, act }) {
       </>
     );
     action = <Button onClick={take}>{t("Take over")}</Button>;
+  } else if (c.open_conversation_id) {
+    // The customer wrote again after this was resolved: the chat goes on in the newer conversation.
+    text = (
+      <>
+        <strong>{t("{name} wrote again.", { name: firstName(visitorName(c)) })}</strong> {t("The chat goes on in a newer conversation.")}
+      </>
+    );
+    action = <Button onClick={() => go("inbox", c.open_conversation_id)}>{t("Open it")}</Button>;
   } else {
     text = (
       <>
@@ -601,6 +616,8 @@ function Details({ c, me, act }) {
           <Button icon="check" onClick={() => act("resolve", null, t("Conversation resolved"))}>
             {t("Mark resolved")}
           </Button>
+        ) : c.open_conversation_id ? (
+          <Button onClick={() => go("inbox", c.open_conversation_id)}>{t("Open the newer conversation")}</Button>
         ) : (
           <Button onClick={() => act("reopen")}>{t("Reopen conversation")}</Button>
         )}
@@ -668,6 +685,12 @@ export function Inbox({ id }) {
       if (success) toast(success, { sub });
       return true;
     } catch (e) {
+      // Reopened elsewhere meanwhile (another tab, or the customer wrote again): go to where the chat is.
+      if (e.body?.open_conversation_id) {
+        toast(e.message);
+        go("inbox", e.body.open_conversation_id);
+        return false;
+      }
       toast(e.message, { tone: "error" });
       return false;
     }
@@ -678,7 +701,11 @@ export function Inbox({ id }) {
     ? [
         sel.assignee_id !== me && { label: t("Assign to me"), icon: "user", onSelect: () => act("assign", { user_id: me }, t("Assigned to you")) },
         sel.status === "human" && { label: t("Hand back to AI"), icon: "bot", description: t("The AI answers new messages again"), onSelect: () => act("hand-back", null, t("Handed back to AI")) },
-        sel.status !== "resolved" ? { label: t("Mark resolved"), icon: "check", onSelect: () => act("resolve", null, t("Conversation resolved")) } : { label: t("Reopen"), icon: "reset", onSelect: () => act("reopen") },
+        sel.status !== "resolved"
+          ? { label: t("Mark resolved"), icon: "check", onSelect: () => act("resolve", null, t("Conversation resolved")) }
+          : sel.open_conversation_id
+            ? { label: t("Open the newer conversation"), icon: "arrowRight", onSelect: () => go("inbox", sel.open_conversation_id) }
+            : { label: t("Reopen"), icon: "reset", onSelect: () => act("reopen") },
         { separator: true },
         {
           label: t("Mark as unread"),

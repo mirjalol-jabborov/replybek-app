@@ -1753,7 +1753,1180 @@ body {
 .channel-back { display: inline-flex; align-items: center; gap: 6px; background: none; border: 0; padding: 0; color: var(--fg-3); font: inherit; font-size: 13px; cursor: pointer; }
 .channel-back:hover { color: var(--fg); }
 .channel-detail { max-width: 720px; padding: 24px; }
+.channel-section { display: flex; flex-direction: column; gap: 14px; padding-top: 20px; margin-top: 8px; border-top: 1px solid var(--border); }
+.channel-section-head { display: flex; flex-direction: column; gap: 2px; }
+.channel-section-head .helper { margin: 0; }
+.bot-photo { width: 56px; height: 56px; font-size: 18px; }
+.bot-photo.has-logo img { object-fit: cover; }
 @media (max-width: 1000px) { .channels-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 640px) { .channels-grid { grid-template-columns: 1fr; } }
 
 .composer-warning { padding: 0 16px 8px; }
+
+/* Sidebar items keep their full width inside the tooltip wrapper. */
+.tip-anchor.tip-block {
+  display: flex;
+  width: 100%;
+}
+
+/* The connected channel's name, status and Disconnect: one row on wide screens, stacked on phones. */
+.channel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.channel-account {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  min-width: 0;
+}
+.channel-account > strong {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+@media (max-width: 560px) {
+  .channel-detail {
+    padding: 18px;
+  }
+  .channel-head {
+    flex-direction: column;
+  }
+}
+.logo-picker:has(> .bot-photo) {
+  flex-wrap: nowrap;
+}
+.bot-photo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* A callout's button goes under its text on phones, so the text keeps the full width. */
+@media (max-width: 560px) {
+  .callout:has(> :nth-child(3)) {
+    flex-wrap: wrap;
+  }
+  .callout:has(> :nth-child(3)) > .callout-body {
+    flex-basis: calc(100% - 25px);
+  }
+  .callout:has(> :nth-child(3)) > :last-child {
+    margin-left: 25px;
+  }
+}
+
+/* All three agent steps fit on a phone instead of the last one running off the edge. */
+@media (max-width: 480px) {
+  .workflow-links {
+    gap: 2px;
+  }
+  .workflow-links button {
+    padding: 6px 6px;
+    gap: 5px;
+  }
+}
+
+/* On phones the chat header keeps room for the customer's name: the routine states ("AI is replying",
+   "Resolved") are already in the bar under the chat, and only the ones that need someone stay up here. */
+@media (max-width: 480px) {
+  .ib-conv-head .handling.ai,
+  .ib-conv-head .handling.done {
+    display: none;
+  }
+}
+
+/* Telegram Business setup: numbered steps that tick over as each one is done. */
+.setup-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border);
+}
+.setup-step {
+  display: flex;
+  gap: 14px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+}
+.setup-step-mark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-2);
+}
+.setup-step.done .setup-step-mark {
+  background: var(--green-soft);
+  border-color: transparent;
+  color: var(--green);
+}
+.setup-step.warn .setup-step-mark {
+  background: var(--amber-soft);
+  border-color: transparent;
+  color: var(--amber);
+}
+.setup-step-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding-top: 2px;
+}
+.setup-step-body > strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+.setup-step-body .helper {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.setup-step-warn {
+  color: var(--amber);
+}
+.setup-step-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.setup-notes {
+  margin: 0;
+  padding-inline-start: 18px;
+  display: grid;
+  gap: 4px;
+}
+
+/* ───── Telegram walkthroughs: a small phone playing each step like a looping GIF ───── */
+.tg-guide {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.tg-guide-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tg-guide-steps button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px 6px 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--fg-2);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.tg-guide-steps button[aria-current="step"] {
+  border-color: var(--fg);
+  color: var(--fg);
+  font-weight: 600;
+}
+.tg-guide-n {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--surface-muted);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+.tg-guide-steps button[aria-current="step"] .tg-guide-n {
+  background: var(--primary);
+  color: var(--primary-fg);
+}
+.tg-guide-stage {
+  display: flex;
+  gap: 22px;
+  align-items: center;
+}
+.tg-guide-side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  flex: 1;
+}
+.tg-guide-caption {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg);
+}
+.tg-guide-dots {
+  display: flex;
+  gap: 5px;
+}
+.tg-guide-dots span {
+  width: 16px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border-strong);
+  transition: background 0.2s;
+}
+.tg-guide-dots span.past,
+.tg-guide-dots span.on {
+  background: var(--fg);
+}
+.tg-guide-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+@media (max-width: 560px) {
+  .tg-guide-stage {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .tg-phone {
+    align-self: center;
+  }
+}
+.setup-step-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.setup-step-title > strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* The phone itself: drawn like Telegram's own iPhone app (light theme), so an owner recognises each
+   screen. It keeps one look in both dashboard themes, the way a screenshot would. */
+.tg-phone {
+  flex: none;
+  position: relative;
+  width: 252px;
+  height: 500px;
+  max-width: 100%;
+  border: 7px solid #111215;
+  border-radius: 40px;
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 14px 40px rgba(17, 18, 21, 0.18);
+  font-family: -apple-system, "SF Pro Text", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 11.5px;
+  line-height: 1.32;
+  color: #000;
+  -webkit-font-smoothing: antialiased;
+}
+.tg-phone > * {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+.tg-status {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 30px;
+  padding: 0 18px 0 22px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #000;
+}
+.tg-island {
+  width: 62px;
+  height: 18px;
+  border-radius: 10px;
+  background: #000;
+}
+.tg-status-icons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.tg-signal {
+  width: 13px;
+  height: 8px;
+  background: linear-gradient(90deg, #000 0 20%, transparent 20% 27%, #000 27% 47%, transparent 47% 54%, #000 54% 74%, transparent 74% 81%, #000 81%);
+  clip-path: polygon(0 100%, 100% 0, 100% 100%);
+}
+.tg-battery {
+  width: 18px;
+  height: 9px;
+  border: 1.5px solid #000;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px #fff;
+  background: #000;
+}
+
+/* Chat */
+.tg-chatview {
+  background: #fff;
+}
+.tg-nav {
+  flex: none;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 10px;
+  background: rgba(247, 247, 247, 0.96);
+  border-bottom: 0.5px solid #c8c7cc;
+}
+.tg-nav-back {
+  color: #3390ec;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.tg-nav-center {
+  position: absolute;
+  left: 64px;
+  right: 46px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+.tg-nav-title {
+  max-width: 100%;
+  font-weight: 600;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tg-nav-sub {
+  font-size: 9.5px;
+  color: #8e8e93;
+}
+.tg-nav .tg-ava {
+  margin-left: auto;
+}
+.tg-ava {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  color: #fff;
+  font-weight: 600;
+  font-size: 11px;
+}
+.tg-ava.blue {
+  background: linear-gradient(#72d5fd, #2a9ef1);
+}
+.tg-ava.violet {
+  background: linear-gradient(#e0a2f3, #d669ed);
+}
+/* Telegram's default wallpaper: a soft green and yellow gradient with its faint pattern. */
+.tg-wall {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 5px;
+  padding: 8px 8px 6px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(255, 255, 255, 0.18) 0 2px, transparent 3px) 0 0 / 34px 34px,
+    radial-gradient(circle at 70% 60%, rgba(255, 255, 255, 0.14) 0 1.5px, transparent 2.5px) 0 0 / 27px 27px,
+    linear-gradient(160deg, #d5d88d 0%, #88b884 38%, #6ba587 62%, #dbddbb 100%);
+}
+.tg-msg-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: flex-start;
+  max-width: 88%;
+  animation: tg-in 0.25s ease-out both;
+}
+.tg-msg-wrap.me {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+.tg-bubble {
+  position: relative;
+  padding: 5px 8px 5px 9px;
+  border-radius: 14px 14px 14px 4px;
+  background: #fff;
+  box-shadow: 0 0.5px 1px rgba(0, 0, 0, 0.12);
+  overflow-wrap: anywhere;
+}
+.tg-bubble.me {
+  border-radius: 14px 14px 4px 14px;
+  background: #effdde;
+}
+.tg-meta {
+  float: right;
+  margin: 5px 0 -2px 8px;
+  font-size: 9px;
+  color: #8e8e93;
+  white-space: nowrap;
+}
+.tg-bubble.me .tg-meta {
+  color: #5fa850;
+}
+.tg-ticks {
+  margin-left: 2px;
+  letter-spacing: -3px;
+}
+.tg-code {
+  display: block;
+  margin-top: 4px;
+  padding: 3px 5px;
+  border-radius: 5px;
+  background: rgba(51, 144, 236, 0.1);
+  color: #1f6fbf;
+  font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  font-size: 9.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tg-code.copied {
+  background: rgba(52, 199, 89, 0.15);
+  color: #1e8e3e;
+}
+/* Inline buttons sit on the wallpaper, see-through, with white text. */
+.tg-kb {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  min-width: 176px;
+}
+.tg-kb-row {
+  display: flex;
+  gap: 3px;
+}
+.tg-kb-btn {
+  flex: 1;
+  padding: 6px 4px;
+  border-radius: 8px;
+  background: rgba(36, 63, 44, 0.32);
+  color: #fff;
+  text-align: center;
+  font-size: 10.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  backdrop-filter: blur(6px);
+}
+.tg-inputbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 8px 14px;
+  background: rgba(247, 247, 247, 0.96);
+  border-top: 0.5px solid #c8c7cc;
+  color: #8e8e93;
+}
+.tg-pill {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 10px;
+  border-radius: 14px;
+  border: 0.5px solid #d1d1d6;
+  background: #fff;
+  color: #000;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.tg-ph {
+  color: #a3a3a8;
+}
+.tg-typed {
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+  vertical-align: bottom;
+  animation: tg-type 0.7s steps(14) both;
+}
+.tg-sendbtn {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #3390ec;
+  color: #fff;
+  transform: rotate(-90deg);
+}
+.tg-mic {
+  width: 9px;
+  height: 14px;
+  border-radius: 5px;
+  border: 1.5px solid #8e8e93;
+}
+.tg-startbar {
+  flex: none;
+  padding: 12px 0 18px;
+  background: rgba(247, 247, 247, 0.96);
+  border-top: 0.5px solid #c8c7cc;
+  text-align: center;
+  color: #3390ec;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+/* Settings and Chat Automation: iOS grouped lists. */
+.tg-ios {
+  background: #efeff4;
+}
+.tg-ios-big {
+  padding: 4px 14px 8px;
+  font-size: 20px;
+  font-weight: 700;
+}
+.tg-ios-big-sm {
+  padding-top: 0;
+  font-size: 17px;
+  line-height: 1.15;
+}
+.tg-ios-nav {
+  flex: none;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 36px;
+  padding: 0 10px;
+}
+.tg-ios-back,
+.tg-ios-action {
+  color: #3390ec;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.tg-ios-action {
+  font-weight: 600;
+  padding: 3px 4px;
+  border-radius: 6px;
+}
+.tg-ios-action.off {
+  color: #c7c7cc;
+}
+.tg-ios-back {
+  font-size: 20px;
+  line-height: 1;
+}
+.tg-ios-title {
+  position: absolute;
+  left: 30px;
+  right: 58px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tg-section {
+  padding: 10px 16px 4px;
+  font-size: 9.5px;
+  color: #6d6d72;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.tg-group {
+  margin: 0 10px;
+  border-radius: 10px;
+  background: #fff;
+  overflow: hidden;
+  animation: tg-in 0.25s ease-out both;
+}
+.tg-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 34px;
+  padding: 5px 10px;
+}
+.tg-cell + .tg-cell::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 40px;
+  right: 0;
+  border-top: 0.5px solid #c8c7cc;
+}
+.tg-input-cell + .tg-cell::before {
+  left: 10px;
+}
+.tg-cell-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 21px;
+  height: 21px;
+  border-radius: 6px;
+  color: #fff;
+}
+.tg-cell-icon.c0 {
+  background: #ff3b30;
+}
+.tg-cell-icon.c1 {
+  background: #8e8e93;
+}
+.tg-cell-icon.c2 {
+  background: #af52de;
+}
+.tg-cell-icon.c3 {
+  background: #ff9500;
+}
+.tg-cell-icon.c4 {
+  background: #5856d6;
+}
+.tg-cell-label {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tg-cell-name {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tg-cell-sub {
+  font-size: 9.5px;
+  color: #8e8e93;
+}
+.tg-chev {
+  color: #c7c7cc;
+  font-size: 15px;
+  line-height: 1;
+}
+.tg-check {
+  flex: none;
+  color: #3390ec;
+  font-weight: 700;
+}
+.tg-cell-label.tg-wrap {
+  white-space: normal;
+}
+.tg-input-cell {
+  white-space: nowrap;
+  overflow: hidden;
+}
+.tg-field-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tg-caret {
+  flex: none;
+  width: 1px;
+  height: 13px;
+  background: #3390ec;
+  animation: tg-blink 0.9s steps(1) infinite;
+}
+.tg-switch {
+  flex: none;
+  position: relative;
+  width: 32px;
+  height: 19px;
+  border-radius: 10px;
+  background: #e9e9eb;
+  transition: background 0.2s;
+}
+.tg-switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s;
+}
+.tg-switch.on {
+  background: #34c759;
+}
+.tg-switch.on::after {
+  transform: translateX(13px);
+}
+.tg-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 26px;
+  transform: translateX(-50%);
+  padding: 6px 12px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  font-size: 11px;
+  white-space: nowrap;
+  animation: tg-in 0.25s ease-out both;
+}
+.tg-ios {
+  position: absolute;
+}
+
+/* Back in Replybek: our own page, in our own look. */
+.tg-app {
+  background: #fcfcfb;
+}
+.tg-app-head {
+  padding: 8px 14px 10px;
+  border-bottom: 1px solid #e8e8e6;
+  font-family: "Bricolage Grotesque", Inter, sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: -0.04em;
+}
+.tg-app-head span {
+  color: #2d5bd2;
+}
+.tg-app-form {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 16px 14px;
+  font-family: Inter, system-ui, sans-serif;
+}
+.tg-app-label {
+  font-size: 11px;
+  font-weight: 500;
+}
+.tg-app-field {
+  display: flex;
+  min-height: 30px;
+  align-items: center;
+  padding: 0 9px;
+  border: 1px solid #d6d6d3;
+  border-radius: 7px;
+  background: #fff;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 10px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.tg-app-btn {
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 7px 14px;
+  border-radius: 7px;
+  background: #111215;
+  color: #fff;
+  font-weight: 500;
+}
+.tg-app-btn.done {
+  background: #1c7a4a;
+}
+
+/* Where the tap lands: a ring that pulses, just before the next screen. */
+.tg-tap {
+  position: relative;
+  box-shadow: 0 0 0 2px #3390ec;
+}
+.tg-tap::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 24px;
+  height: 24px;
+  margin: -12px 0 0 -12px;
+  border-radius: 50%;
+  background: rgba(51, 144, 236, 0.45);
+  animation: tg-press 0.6s ease-out both;
+  pointer-events: none;
+}
+@keyframes tg-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@keyframes tg-type {
+  from {
+    max-width: 0;
+  }
+  to {
+    max-width: 100%;
+  }
+}
+@keyframes tg-blink {
+  50% {
+    opacity: 0;
+  }
+}
+@keyframes tg-press {
+  from {
+    transform: scale(0.4);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.4);
+    opacity: 0.5;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tg-msg-wrap,
+  .tg-group,
+  .tg-toast,
+  .tg-typed,
+  .tg-tap::after {
+    animation: none;
+  }
+}
+
+/* Step 3 as in Telegram: grouped settings, the Business list, and the Chat Automation screen. */
+.tg-ios .tg-group + .tg-group {
+  margin-top: 12px;
+}
+.tg-cell.tall {
+  align-items: flex-start;
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+.tg-cell.tall .tg-chev {
+  align-self: center;
+}
+.tg-cell-icon.red { background: #ff3b30; }
+.tg-cell-icon.gray { background: #8e8e93; }
+.tg-cell-icon.green { background: #34c759; }
+.tg-cell-icon.blue { background: #32ade6; }
+.tg-cell-icon.violet { background: #af52de; }
+.tg-cell-icon.purple { background: #7b61ff; }
+.tg-cell-icon.orange { background: #ff9f0a; }
+.tg-cell-icon.pink { background: #ff2d55; }
+.tg-cell-icon.teal { background: #30b0c7; }
+.tg-cell-icon.indigo { background: #5e5ce6; }
+.tg-cell-sub.tg-wrap {
+  white-space: normal;
+  line-height: 1.25;
+}
+.tg-ios-round {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  color: #000;
+  font-size: 17px;
+  line-height: 1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+.tg-ios-nav .tg-ios-title {
+  left: 40px;
+  right: 40px;
+}
+.tg-auto {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.45s ease;
+}
+.tg-auto.scrolled {
+  transform: translateY(-138px);
+}
+.tg-auto-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 0 18px 12px;
+  text-align: center;
+}
+.tg-auto-art {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: linear-gradient(#ffd60a, #ff9f0a);
+  color: #fff;
+  margin-bottom: 4px;
+}
+.tg-auto-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+.tg-auto-lead {
+  font-size: 10.5px;
+  color: #3c3c43;
+}
+.tg-foot {
+  padding: 4px 16px 0;
+  font-size: 9.5px;
+  color: #6d6d72;
+}
+.tg-x {
+  color: #8e8e93;
+  font-size: 15px;
+  line-height: 1;
+}
+.tg-check.violet {
+  color: #af52de;
+}
+.tg-check {
+  width: 10px;
+}
+.tg-count {
+  font-weight: 600;
+  font-size: 9.5px;
+  margin-left: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tg-auto {
+    transition: none;
+  }
+}
+.tg-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* A pointer to the walkthrough: a soft panel, not a link. */
+.guide-hint {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface-muted);
+}
+.guide-hint-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--fg);
+}
+.guide-hint-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.guide-hint-text strong {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.guide-hint-text .helper {
+  margin: 0;
+}
+/* The phone is a picture of Telegram: nothing in it is text to copy. */
+.tg-phone {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+/* A link styled as a button is a button: no underline. */
+a.btn,
+a.btn:hover {
+  text-decoration: none;
+}
+
+/* ───── Instructions: the box's corner button, and the big Markdown editor ───── */
+.field-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 28px;
+}
+.field-head .btn-ghost {
+  margin-right: -8px;
+  color: var(--fg-2);
+}
+.dialog.editor {
+  max-width: 1120px;
+  height: min(820px, 100%);
+}
+.dialog.editor .dialog-body {
+  flex: 1;
+  min-height: 0;
+  gap: 10px;
+  overflow: hidden;
+}
+.md-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
+}
+.dialog.editor .dialog-body {
+  overflow-x: hidden;
+}
+.md-tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.md-sep {
+  flex: none;
+  width: 1px;
+  height: 18px;
+  margin: 0 6px;
+  background: var(--border);
+}
+.md-panes {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  gap: 12px;
+}
+.md-panes.split {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+.md-input,
+.md-preview {
+  min-height: 0;
+  height: 100%;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  overflow-y: auto;
+}
+.md-input {
+  width: 100%;
+  padding: 14px 16px;
+  resize: none;
+  font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--fg);
+  outline: none;
+}
+.md-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+.md-preview {
+  padding: 14px 18px;
+  background: var(--surface-muted);
+  border-color: var(--border);
+}
+.md-count {
+  font-variant-numeric: tabular-nums;
+}
+.md-count.low {
+  color: var(--amber);
+}
+/* What the preview shows: the same type as the rest of the dashboard. */
+.md-view {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--fg);
+  overflow-wrap: anywhere;
+}
+.md-view > * {
+  margin: 0 0 10px;
+}
+.md-view h3,
+.md-view h4,
+.md-view h5 {
+  margin-top: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.md-view h3 {
+  font-size: 18px;
+}
+.md-view h4 {
+  font-size: 15.5px;
+}
+.md-view h5 {
+  font-size: 14px;
+}
+.md-view > :first-child {
+  margin-top: 0;
+}
+.md-view ul,
+.md-view ol {
+  padding-inline-start: 20px;
+}
+.md-view li + li {
+  margin-top: 3px;
+}
+.md-view blockquote {
+  padding: 6px 12px;
+  border-left: 3px solid var(--border-strong);
+  color: var(--fg-2);
+}
+.md-view code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 12.5px;
+}
+.md-view pre {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 12.5px;
+  white-space: pre-wrap;
+}
+.md-view hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 16px 0;
+}
+.md-view a {
+  color: var(--accent);
+}
+@media (max-width: 760px) {
+  .dialog.editor {
+    height: calc(100% - 8px);
+  }
+  .dialog.editor .foot-note {
+    flex-basis: 100%;
+  }
+  .md-tools {
+    max-width: 100%;
+  }
+  .md-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .md-input {
+    font-size: 16px;
+  }
+}

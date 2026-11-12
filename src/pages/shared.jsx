@@ -46,7 +46,7 @@ export function RangeControl({ value, onChange }) {
 }
 
 /** Loading and error states shared by pages. */
-export function Loading({ label = "Loading…" }) {
+export function Loading({ label = t("Loading…") }) {
   return (
     <div className="empty" role="status">
       <span className="spin" style={{ width: 18, height: 18, border: "2px solid var(--border-strong)", borderTopColor: "var(--accent)", borderRadius: "50%", display: "inline-block" }} />

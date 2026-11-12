@@ -4,6 +4,7 @@ import { Icon } from "../icons.jsx";
 import { api } from "../api.js";
 import { questionLists, questionsFor } from "../suggestions.js";
 import { SuggestionEditor } from "./suggestion-editor.jsx";
+import { InstructionsField } from "../components/markdown-editor.jsx";
 import { WIDGET_LANGUAGES, languageLabel, languageOptions, orderedLanguages, isAuto } from "../widget-languages.js";
 import { useWorkspace } from "../workspace.jsx";
 import { go } from "../hooks.js";
@@ -378,17 +379,17 @@ export function Playground() {
               </div>
               <div className="cfg-sec">
                 <h2 className="cfg-sec-title">{t("Behavior")}</h2>
-                <Textarea
+                <InstructionsField
                   id="pg-ins"
                   label={t("Instructions")}
                   hint={t("Plain-language guidance the agent follows alongside its knowledge. Test questions use your unsaved changes.")}
-                  rows={7}
-                  autoGrow
                   value={draft.instructions}
                   onChange={set("instructions")}
-                  maxLength={8000}
                   disabled={!isAdmin}
-                />
+                  maxLength={8000}
+                >
+                  <Textarea id="pg-ins" rows={7} autoGrow value={draft.instructions} onChange={set("instructions")} maxLength={8000} disabled={!isAdmin} aria-describedby="pg-ins-hint" />
+                </InstructionsField>
                 <Field id="pg-tone" label={t("Tone")} hint={t(TONES.find((x) => x.value === draft.tone)?.hint)}>
                   <SegmentedControl
                     full
