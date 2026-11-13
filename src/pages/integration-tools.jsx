@@ -288,6 +288,7 @@ function fromTool(tool) {
       {
         response: tool.response || { type: "json" },
         ...(tool.confirm ? { confirm: tool.confirm } : {}),
+        ...(tool.display ? { display: tool.display } : {}),
       },
       null,
       2,
@@ -345,6 +346,8 @@ function toTool(f) {
     request,
     ...(adv.response ? { response: adv.response } : {}),
     ...(adv.confirm ? { confirm: adv.confirm } : {}),
+    // display: show the result as cards with photos in the chat. Taken out here when removed.
+    display: adv.display || undefined,
   };
 }
 

@@ -4,6 +4,7 @@ import { Icon } from "../icons.jsx";
 import { api, apiUrl } from "../api.js";
 import { useWorkspace } from "../workspace.jsx";
 import { useResource, go } from "../hooks.js";
+import { ProductCards } from "../components/product-cards.jsx";
 import { onTyping } from "../live.js";
 import { Avatar, StatusBadge, Callout, Drawer, EmptyState, Sim, Button, IconButton, TextInput, Tabs, tabPanel, Select, ActionMenu, shortAge, timeAgo, clock, useToast, initialsOf, toneOf } from "../ui.jsx";
 import { AgentSelect, Loading } from "./shared.jsx";
@@ -226,6 +227,7 @@ function Transcript({ c, onHideSummary, showSummary }) {
               )}
               {m.body && <div className="tbody">{m.body}</div>}
               <Attachments files={m.attachments} />
+              {m.role === "ai" && <ProductCards card={m.card} />}
               {m.role === "ai" && <SourcesUsed sources={m.sources} />}
             </div>
           );
