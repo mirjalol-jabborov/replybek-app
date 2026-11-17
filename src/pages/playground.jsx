@@ -87,6 +87,9 @@ export function Playground() {
   const scroll = useRef(null);
   const [questionLanguage, setQuestionLanguage] = useState(getLang);
 
+  // The agent as last loaded: when it changes on the server (a save, translations finishing), a
+  // draft without edits of its own follows it, so a saved form never shows as unsaved.
+  const synced = useRef(agent ? JSON.stringify(pick(agent)) : null);
   useEffect(() => {
     if (agent && draftFor !== agent.id) {
       setDraft(pick(agent));
@@ -94,6 +97,8 @@ export function Playground() {
       setErrors({});
       setMessages([]);
     } else if (agent && !draft) setDraft(pick(agent));
+    else if (agent && draft && JSON.stringify(draft) === synced.current) setDraft(pick(agent));
+    if (agent) synced.current = JSON.stringify(pick(agent));
   }, [agent?.id, agent]);
   useEffect(() => {
     if (scroll.current) scroll.current.scrollTop = scroll.current.scrollHeight;
@@ -188,11 +193,14 @@ export function Playground() {
     try {
       const lists = Object.fromEntries(Object.entries(draft.suggested_questions_i18n).map(([lang, questions]) => [lang, questions.map(q => q.trim()).filter(Boolean)]));
       const savedDraft = { ...draft, name: draft.name.trim(), suggested_questions_i18n: lists };
-      await api(`${base}/agents/${agent.id}`, {
+      const updated = await api(`${base}/agents/${agent.id}`, {
         method: "PATCH",
         body: { ...savedDraft, suggested_questions: lists[draft.suggestion_default_language] || [] },
       });
-      setDraft(savedDraft);
+      // What the server kept, not what was sent: it may tidy or translate fields as it saves.
+      const kept = updated?.id === agent.id ? pick(updated) : savedDraft;
+      synced.current = JSON.stringify(kept);
+      setDraft(kept);
       await reloadAgents();
       toast(t("Agent settings saved"), {
         sub: agent.status === "active" ? t("The website widget uses them now.") : undefined,

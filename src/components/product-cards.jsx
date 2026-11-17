@@ -1,10 +1,10 @@
-/** Cards an answer showed the customer (bouquets, products): photo, name, price, link. As in the widget. */
+/** Cards an answer showed the customer (products, listings…): photo, name, price, link. As in the widget. */
 export function ProductCards({ card }) {
   if (card?.type !== "products" || !card.items?.length) return null;
   const price = (i) =>
     i.price == null ? "" : typeof i.price === "number" ? `${i.price.toLocaleString("ru-RU").replace(/ /g, " ")}${i.currency ? ` ${i.currency}` : ""}` : String(i.price);
   return (
-    <div className="pcards">
+    <div className={card.layout === "list" ? "pcards list" : "pcards"}>
       {card.items.map((i, n) => {
         const Tag = i.url ? "a" : "div";
         return (
