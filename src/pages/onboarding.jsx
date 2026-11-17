@@ -22,6 +22,7 @@ const STEPS = [
   { id: "live", label: tk("Go live") },
 ];
 const READING = [tk("Opening your website"), tk("Finding your logo and colours"), tk("Finding your pages")];
+const READING_DOCS = [tk("Opening your documents"), tk("Finding your business name"), tk("Writing your welcome message")];
 // The chat colours from replybek.uz; ink is the default.
 const COLORS = ["#111215", "#1f3d36", "#2d5bd2", "#a63d17", "#334155", "#0f766e"];
 const isHex = (c) => /^#[0-9a-f]{6}$/i.test(c || "");
@@ -57,12 +58,17 @@ export function Onboarding({ another = false }) {
   const [draft, setDraft] = useState(() => (activeAgent && !another ? fromAgent(activeAgent, workspace) : null));
   const [agent, setAgent] = useState(another ? null : activeAgent);
   const [docs, setDocs] = useState([]);
+  // What the documents said about the business (name, language, welcome), when it came from them.
+  const [docBrand, setDocBrand] = useState(null);
+  // No website and no documents: just a name now, knowledge added on the Knowledge page later.
+  const [blank, setBlank] = useState(false);
+  const [readingList, setReadingList] = useState(READING);
   const docsInput = useRef(null);
   // The agent and uploaded files, once saved, so a failed upload can be retried without doubling anything.
   const made = useRef(null);
   const uploaded = useRef(new Set());
   const fromDocs = !found && docs.length > 0;
-  const lang = found?.language || (another ? null : activeAgent?.suggestion_default_language) || (fromDocs ? getLang() : "en");
+  const lang = found?.language || docBrand?.language || (another ? null : activeAgent?.suggestion_default_language) || (fromDocs || blank ? getLang() : "en");
 
   const finish = async () => {
     // Another agent: the workspace was set up long ago. Before the agent exists, back to the list.
@@ -82,6 +88,7 @@ export function Onboarding({ another = false }) {
     setError("");
     setBusy(true);
     setReading(0);
+    setReadingList(READING);
     const timer = setInterval(() => setReading((n) => Math.min(n + 1, READING.length - 1)), 1100);
     try {
       const r = await api(`${base}/onboarding/analyze`, { method: "POST", body: { url: url.trim() } });
@@ -90,6 +97,8 @@ export function Onboarding({ another = false }) {
       await new Promise((done) => setTimeout(done, 450)); // let the last tick land
       setFound(r);
       setDocs([]);
+      setDocBrand(null);
+      setBlank(false);
       setDraft({ display_name: r.name, agent_name: r.agent_name, accent: r.accent || COLORS[0], logo: r.logo || "", welcome: r.welcome });
       setStep("brand");
     } catch (e) {
@@ -100,16 +109,59 @@ export function Onboarding({ another = false }) {
     }
   };
 
-  const pickDocs = (list) => {
-    const picked = [...list];
+  /** The proposal with nothing to read it from: the workspace's own name. */
+  const plainDraft = () => {
+    const name = workspace.name;
+    return { display_name: name, agent_name: t("{name} AI agent", { name }), accent: COLORS[0], logo: "", welcome: t("Hi! I'm the {name} AI agent. How can I help you today?", { name }) };
+  };
+
+  /** Documents instead of a website: read like a site is, for the business's name, language and welcome. */
+  const pickDocs = async (list) => {
+    const picked = [...list].slice(0, 10);
     const bad = picked.filter((f) => !DOC_TYPES.test(f.name) || f.size > DOC_MAX);
     if (bad.length) return setError(t("{names}: use PDF, DOCX, TXT, MD or CSV up to 20 MB.", { names: bad.map((f) => f.name).join(", ") }));
     if (!picked.length) return;
-    const name = workspace.name;
+    setError("");
+    setBusy(true);
+    setReading(0);
+    setReadingList(READING_DOCS);
+    const timer = setInterval(() => setReading((n) => Math.min(n + 1, READING_DOCS.length - 1)), 1300);
+    try {
+      const form = new FormData();
+      for (const f of picked) form.append("file", f);
+      let r = null;
+      try {
+        r = await api(`${base}/onboarding/analyze-docs`, { method: "POST", form });
+      } catch (e) {
+        // Files with no readable text: say which, and stay here. Anything else: go on with plain defaults.
+        if (e.status === 422 || e.status === 400) throw e;
+      }
+      clearInterval(timer);
+      setReading(READING_DOCS.length);
+      await new Promise((done) => setTimeout(done, 450));
+      const readable = r?.unreadable?.length ? picked.filter((f) => !r.unreadable.includes(f.name)) : picked;
+      if (r?.unreadable?.length) toast(t("{names}: no readable text, so it was left out.", { names: r.unreadable.join(", ") }), { tone: "error", duration: 8000 });
+      setFound(null);
+      setBlank(false);
+      setDocs(readable);
+      setDocBrand(r);
+      setDraft(r ? { display_name: r.name, agent_name: r.agent_name, accent: COLORS[0], logo: "", welcome: r.welcome } : plainDraft());
+      setStep("brand");
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      clearInterval(timer);
+      setBusy(false);
+    }
+  };
+
+  const startBlank = () => {
     setError("");
     setFound(null);
-    setDocs(picked);
-    setDraft({ display_name: name, agent_name: t("{name} AI agent", { name }), accent: COLORS[0], logo: "", welcome: t("Hi! I'm the {name} AI agent. How can I help you today?", { name }) });
+    setDocs([]);
+    setDocBrand(null);
+    setBlank(true);
+    setDraft(plainDraft());
     setStep("brand");
   };
 
@@ -117,7 +169,7 @@ export function Onboarding({ another = false }) {
     setBusy(true);
     try {
       const name = draft.display_name.trim() || workspace.name;
-      const purpose = found ? found.purpose : `Answers visitors' questions about ${name} using its documents.`;
+      const purpose = found ? found.purpose : docBrand ? docBrand.purpose : fromDocs ? `Answers visitors' questions about ${name} using its documents.` : `Answers customers' questions about ${name}.`;
       const a = made.current || (await api(`${base}/agents`, { method: "POST", body: { name: draft.agent_name.trim() || found?.agent_name || t("{name} AI agent", { name }), purpose, welcome: draft.welcome.trim(), tone: "friendly" } }));
       made.current = a;
       const saved = await api(`${base}/agents/${a.id}`, {
@@ -137,8 +189,18 @@ export function Onboarding({ another = false }) {
       // A Google sign-up's workspace was named provisionally; the business name from the site is better.
       if (!another && workspace.settings?.auto_named && draft.display_name.trim()) await api(base, { method: "PATCH", body: { name: draft.display_name.trim() } }).catch(() => {});
       setAgent(saved);
+      // The list first, so the new agent is in it when it becomes the one shown (else the first one is).
+      await reloadAgents();
       setActiveAgent(saved.id);
-      reloadAgents();
+      if (blank) {
+        // Nothing to learn from yet: straight to where knowledge is added.
+        if (!another) {
+          await api(`${base}/onboarding/complete`, { method: "POST", body: {} }).catch(() => {});
+          await summary.reload();
+        }
+        toast(t("{name} is created", { name: saved.name }), { sub: t("Add what it should know: your website, files or Q&A.") });
+        return go("knowledge");
+      }
       setStep("train");
     } catch (e) {
       toast(e.message, { tone: "error", duration: 8000 });
@@ -218,11 +280,15 @@ export function Onboarding({ another = false }) {
                   <Icon name="upload" size={14} />
                   {t("Upload documents")}
                 </button>
+                <span aria-hidden="true">·</span>
+                <button type="button" className="onb-alt-btn" onClick={startBlank} disabled={busy}>
+                  {t("Start with just a name")}
+                </button>
                 <input ref={docsInput} id="onb-docs" type="file" multiple accept=".pdf,.docx,.txt,.md,.csv" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => (pickDocs(e.target.files), (e.target.value = ""))} />
               </p>
               {busy && (
                 <ol className="onb-scan" aria-live="polite">
-                  {READING.map((label, i) => (
+                  {readingList.map((label, i) => (
                     <li key={label} className={i < reading ? "done" : i === reading ? "now" : ""}>
                       <span className="onb-tick">{i < reading ? <Icon name="check" size={12} /> : <span className="onb-pulse" />}</span>
                       {t(label)}
@@ -238,10 +304,10 @@ export function Onboarding({ another = false }) {
           <div className="onb-scene onb-split" key="brand">
             <div className="onb-copy">
               <p className="onb-hello onb-site">
-                {draft.logo ? <img src={draft.logo} alt="" /> : <Icon name={found ? "globe" : "file"} size={14} />}
-                {found ? found.host : docs.length === 1 ? docs[0].name : t("{count} documents", { count: fmt(docs.length) })}
+                {draft.logo ? <img src={draft.logo} alt="" /> : <Icon name={found ? "globe" : blank ? "bot" : "file"} size={14} />}
+                {found ? found.host : blank ? t("New agent") : docs.length === 1 ? docs[0].name : t("{count} documents", { count: fmt(docs.length) })}
               </p>
-              <Title>{found ? t("Here's what we found") : t("Make it yours")}</Title>
+              <Title>{found || docBrand ? t("Here's what we found") : t("Make it yours")}</Title>
               <p className="onb-lead">{t("Change anything you like. You can edit it later too.")}</p>
               <div className="onb-fields">
                 <div className="onb-field">
@@ -250,7 +316,7 @@ export function Onboarding({ another = false }) {
                 </div>
                 <TextInput id="onb-name" label={t("Business name")} value={draft.display_name} maxLength={80} onChange={(e) => setDraft({ ...draft, display_name: e.target.value })} />
                 {/* Next to the first agent, its name is how the team tells them apart. */}
-                {another && <TextInput id="onb-agent-name" label={t("Agent name")} value={draft.agent_name} maxLength={80} onChange={(e) => setDraft({ ...draft, agent_name: e.target.value })} />}
+                {(another || blank) && <TextInput id="onb-agent-name" label={t("Agent name")} value={draft.agent_name} maxLength={80} onChange={(e) => setDraft({ ...draft, agent_name: e.target.value })} />}
                 <div className="onb-field">
                   <span className="onb-label">{t("Chat colour")}</span>
                   <div className="onb-colors" role="radiogroup" aria-label={t("Chat colour")}>
@@ -262,7 +328,12 @@ export function Onboarding({ another = false }) {
                 </div>
                 <Textarea id="onb-welcome" label={t("Welcome message")} rows={2} value={draft.welcome} maxLength={500} onChange={(e) => setDraft({ ...draft, welcome: e.target.value })} />
               </div>
-              {!found ? (
+              {blank ? (
+                <p className="onb-knowledge">
+                  <Icon name="book" size={15} />
+                  {t("Add what it should know after it's created: your website, files or Q&A.")}
+                </p>
+              ) : !found ? (
                 <ul className="onb-docs" aria-label={t("Documents to learn from")}>
                   {docs.map((f) => (
                     <li key={f.name}>
@@ -283,10 +354,10 @@ export function Onboarding({ another = false }) {
               </p>
               )}
               <div className="onb-actions">
-                <Button variant="primary" className="btn-lg" onClick={create} loading={busy} disabled={!draft.welcome.trim() || !isHex(draft.accent) || (!found && !fromDocs)} iconRight="arrowRight">
+                <Button variant="primary" className="btn-lg" onClick={create} loading={busy} disabled={!draft.welcome.trim() || !isHex(draft.accent) || (!found && !fromDocs && !blank)} iconRight="arrowRight">
                   {t("Create my agent")}
                 </Button>
-                <button type="button" className="onb-back" onClick={() => (setStep("site"), setDocs([]))} disabled={busy || Boolean(made.current)}>
+                <button type="button" className="onb-back" onClick={() => (setStep("site"), setDocs([]), setDocBrand(null), setBlank(false))} disabled={busy || Boolean(made.current)}>
                   {t("Back")}
                 </button>
               </div>

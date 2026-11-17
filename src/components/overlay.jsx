@@ -238,7 +238,8 @@ export const Popover = React.forwardRef(function Popover({ anchorRef, onClose, c
 });
 
 // ───── Tooltip ─────
-export function Tooltip({ label, children, side = "top" }) {
+// side is "top", "bottom" or "right"; disabled keeps the wrapper (so nothing remounts) but shows nothing.
+export function Tooltip({ label, children, side = "top", delay = 400, disabled = false, className = "" }) {
   const [show, setShow] = useState(false);
   const anchor = useRef(null);
   const tip = useRef(null);
@@ -253,6 +254,11 @@ export function Tooltip({ label, children, side = "top" }) {
     const a = anchor.current.getBoundingClientRect();
     const box = tip.current.getBoundingClientRect();
     const vw = document.documentElement.clientWidth;
+    if (side === "right") {
+      tip.current.style.top = Math.max(4, Math.min(a.top + a.height / 2 - box.height / 2, window.innerHeight - box.height - 4)) + "px";
+      tip.current.style.left = a.right + 8 + "px";
+      return;
+    }
     let top = side === "top" ? a.top - box.height - 6 : a.bottom + 6;
     if (top < 4) top = a.bottom + 6;
     if (top + box.height > window.innerHeight - 4) top = a.top - box.height - 6;
@@ -260,17 +266,21 @@ export function Tooltip({ label, children, side = "top" }) {
     tip.current.style.top = top + "px";
     tip.current.style.left = left + "px";
   }, [show]);
+  useEffect(() => {
+    if (disabled) hide();
+  }, [disabled]);
   return (
     <span
-      className="tip-anchor"
+      className={"tip-anchor" + (className ? " " + className : "")}
       ref={anchor}
       onMouseEnter={() => {
         clearTimeout(timer.current);
-        timer.current = setTimeout(() => setShow(true), 400);
+        if (disabled) return;
+        timer.current = setTimeout(() => setShow(true), delay);
       }}
       onMouseLeave={hide}
       onPointerDown={hide}
-      onFocus={(e) => e.target.matches(":focus-visible") && setShow(true)}
+      onFocus={(e) => !disabled && e.target.matches(":focus-visible") && setShow(true)}
       onBlur={hide}
       onKeyDown={(e) => e.key === "Escape" && hide()}
     >

@@ -4,6 +4,7 @@ import { Icon } from "../icons.jsx";
 import { api } from "../api.js";
 import { questionLists, questionsFor } from "../suggestions.js";
 import { SuggestionEditor } from "./suggestion-editor.jsx";
+import { InstructionsField } from "../components/markdown-editor.jsx";
 import { WIDGET_LANGUAGES, languageLabel, languageOptions, orderedLanguages, isAuto } from "../widget-languages.js";
 import { useWorkspace } from "../workspace.jsx";
 import { go } from "../hooks.js";
@@ -86,6 +87,9 @@ export function Playground() {
   const scroll = useRef(null);
   const [questionLanguage, setQuestionLanguage] = useState(getLang);
 
+  // The agent as last loaded: when it changes on the server (a save, translations finishing), a
+  // draft without edits of its own follows it, so a saved form never shows as unsaved.
+  const synced = useRef(agent ? JSON.stringify(pick(agent)) : null);
   useEffect(() => {
     if (agent && draftFor !== agent.id) {
       setDraft(pick(agent));
@@ -93,6 +97,8 @@ export function Playground() {
       setErrors({});
       setMessages([]);
     } else if (agent && !draft) setDraft(pick(agent));
+    else if (agent && draft && JSON.stringify(draft) === synced.current) setDraft(pick(agent));
+    if (agent) synced.current = JSON.stringify(pick(agent));
   }, [agent?.id, agent]);
   useEffect(() => {
     if (scroll.current) scroll.current.scrollTop = scroll.current.scrollHeight;
@@ -187,11 +193,14 @@ export function Playground() {
     try {
       const lists = Object.fromEntries(Object.entries(draft.suggested_questions_i18n).map(([lang, questions]) => [lang, questions.map(q => q.trim()).filter(Boolean)]));
       const savedDraft = { ...draft, name: draft.name.trim(), suggested_questions_i18n: lists };
-      await api(`${base}/agents/${agent.id}`, {
+      const updated = await api(`${base}/agents/${agent.id}`, {
         method: "PATCH",
         body: { ...savedDraft, suggested_questions: lists[draft.suggestion_default_language] || [] },
       });
-      setDraft(savedDraft);
+      // What the server kept, not what was sent: it may tidy or translate fields as it saves.
+      const kept = updated?.id === agent.id ? pick(updated) : savedDraft;
+      synced.current = JSON.stringify(kept);
+      setDraft(kept);
       await reloadAgents();
       toast(t("Agent settings saved"), {
         sub: agent.status === "active" ? t("The website widget uses them now.") : undefined,
@@ -378,17 +387,17 @@ export function Playground() {
               </div>
               <div className="cfg-sec">
                 <h2 className="cfg-sec-title">{t("Behavior")}</h2>
-                <Textarea
+                <InstructionsField
                   id="pg-ins"
                   label={t("Instructions")}
                   hint={t("Plain-language guidance the agent follows alongside its knowledge. Test questions use your unsaved changes.")}
-                  rows={7}
-                  autoGrow
                   value={draft.instructions}
                   onChange={set("instructions")}
-                  maxLength={8000}
                   disabled={!isAdmin}
-                />
+                  maxLength={8000}
+                >
+                  <Textarea id="pg-ins" rows={7} autoGrow value={draft.instructions} onChange={set("instructions")} maxLength={8000} disabled={!isAdmin} aria-describedby="pg-ins-hint" />
+                </InstructionsField>
                 <Field id="pg-tone" label={t("Tone")} hint={t(TONES.find((x) => x.value === draft.tone)?.hint)}>
                   <SegmentedControl
                     full

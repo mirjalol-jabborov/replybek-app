@@ -103,9 +103,15 @@ function SupportButton() {
   );
 }
 
+/**
+ * The agent picker and its three setup steps, on every page that shows one agent's things: its
+ * knowledge, its test chat, and its channels (the website widget, Telegram). Pages that list all
+ * agents (the inbox, integrations, analytics) have their own filter instead.
+ */
+const AGENT_PAGES = ["knowledge", "playground", "channels"];
 export function AgentWorkflow({ page }) {
   const { activeAgent, agentsLoaded } = useWorkspace();
-  if (!["knowledge", "playground", "widget"].includes(page) || !agentsLoaded || !activeAgent) return null;
+  if (!AGENT_PAGES.includes(page) || !agentsLoaded || !activeAgent) return null;
   return (
     <div className="agent-workflow">
       <div className="agent-workflow-context">
@@ -116,7 +122,7 @@ export function AgentWorkflow({ page }) {
         {[
           ["knowledge", t("Add knowledge"), "book"],
           ["playground", t("Test answers"), "flask"],
-          ["widget", t("Go live"), "globe"],
+          ["channels", t("Go live"), "globe"],
         ].map(([id, label, icon], i) => (
           <button key={id} type="button" aria-current={page === id ? "page" : undefined} onClick={() => go(id)}>
             <span>{i + 1}</span>

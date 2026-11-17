@@ -3,10 +3,11 @@ import { Icon } from "./icons.jsx";
 import { SessionProvider, useSession } from "./session.jsx";
 import { WorkspaceProvider, useWorkspace } from "./workspace.jsx";
 import { InvitePage, ResetPage } from "./pages/join.jsx";
-import { useRoute, go } from "./hooks.js";
+import { useRoute, useResource, go } from "./hooks.js";
+import { TelegramGuide, businessGuide, botGuide } from "./components/telegram-guide.jsx";
 import { getTheme, setTheme } from "./theme.js";
-import { t, LANGS, getLang, setLang, onLangChange } from "./i18n.js";
-import { ToastProvider, ActionMenu, Dialog, Avatar, IconButton, Button, Callout, fmt, pct, initialsOf, capitalize, trialDaysLeft, dateLong } from "./ui.jsx";
+import { t, tk, LANGS, getLang, setLang, onLangChange } from "./i18n.js";
+import { ToastProvider, ActionMenu, Dialog, Avatar, IconButton, Button, Callout, Tooltip, fmt, pct, initialsOf, capitalize, trialDaysLeft, dateLong } from "./ui.jsx";
 
 /** The first day of next month, when the AI message allowance starts over (as the API counts it, in UTC). */
 const nextMonth = () => {
@@ -46,7 +47,7 @@ const PAGES = {
   channels: Channels,
 };
 
-function WorkspaceMenu({ onNavigate }) {
+function WorkspaceMenu({ onNavigate, collapsed }) {
   const { workspaces, setWorkspace } = useSession();
   const { workspace, openDialog } = useWorkspace();
   const nav = (p, id) => {
@@ -101,24 +102,26 @@ function WorkspaceMenu({ onNavigate }) {
         },
       ]}
       trigger={(p) => (
-        <button type="button" className="ws-trigger" {...p} aria-label={t("Workspace: {name}", { name: workspace.name })}>
-          <span className="ws-mark" aria-hidden="true">
-            {workspace.name[0]}
-          </span>
-          <span className="rail-hide" style={{ flex: 1, minWidth: 0 }}>
-            <span className="ws-name truncate" style={{ display: "block" }}>
-              {workspace.name}
+        <Tooltip label={workspace.name} side="right" delay={120} disabled={!collapsed}>
+          <button type="button" className="ws-trigger" {...p} aria-label={t("Workspace: {name}", { name: workspace.name })}>
+            <span className="ws-mark" aria-hidden="true">
+              {workspace.name[0]}
             </span>
-            <span className="ws-sub">{t("{plan} plan", { plan: capitalize(workspace.plan) })}</span>
-          </span>
-          <Icon name="chevronDown" size={14} className="muted rail-hide" />
-        </button>
+            <span className="rail-hide" style={{ flex: 1, minWidth: 0 }}>
+              <span className="ws-name truncate" style={{ display: "block" }}>
+                {workspace.name}
+              </span>
+              <span className="ws-sub">{t("{plan} plan", { plan: capitalize(workspace.plan) })}</span>
+            </span>
+            <Icon name="chevronDown" size={14} className="muted rail-hide" />
+          </button>
+        </Tooltip>
       )}
     />
   );
 }
 
-function UserMenu() {
+function UserMenu({ collapsed }) {
   const { user, signOut } = useSession();
   const { openDialog } = useWorkspace();
   const [theme, setThemeState] = useState(getTheme);
@@ -173,13 +176,15 @@ function UserMenu() {
         { label: t("Sign out"), icon: "arrowLeft", onSelect: signOut },
       ]}
       trigger={(p) => (
-        <button type="button" className="user-trigger" {...p} aria-label={t("Account menu for {name}", { name: user.name })}>
-          <Avatar initials={initialsOf(user.name)} tone="t1" size="xs" src={user.avatar || undefined} cover />
-          <span className="rail-hide truncate text-sm" style={{ flex: 1, fontWeight: 500 }}>
-            {user.name}
-          </span>
-          <Icon name="chevronUp" size={13} className="muted rail-hide" />
-        </button>
+        <Tooltip label={user.name} side="right" delay={120} disabled={!collapsed}>
+          <button type="button" className="user-trigger" {...p} aria-label={t("Account menu for {name}", { name: user.name })}>
+            <Avatar initials={initialsOf(user.name)} tone="t1" size="xs" src={user.avatar || undefined} cover />
+            <span className="rail-hide truncate text-sm" style={{ flex: 1, fontWeight: 500 }}>
+              {user.name}
+            </span>
+            <Icon name="chevronUp" size={13} className="muted rail-hide" />
+          </button>
+        </Tooltip>
       )}
     />
   );
@@ -206,32 +211,31 @@ function Sidebar({ page, onNavigate, collapsed, onToggle }) {
           <IconButton icon="x" label={t("Close")} onClick={onNavigate} />
         )}
       </div>
-      <WorkspaceMenu onNavigate={onNavigate} />
+      <WorkspaceMenu onNavigate={onNavigate} collapsed={collapsed} />
       <div className="nav">
         {NAV_GROUPS.map((group) => (
           <div className="nav-group" key={group.label}>
             <span className="nav-group-title rail-hide">{t(group.label)}</span>
             {group.items.map((n) => (
-              <button
-                key={n.id}
-                type="button"
-                className="nav-item"
-                data-tip={t(n.label)}
-                title={collapsed ? t(n.label) : undefined}
-                aria-current={page === n.id ? "page" : undefined}
-                onClick={() => {
-                  go(n.id);
-                  onNavigate && onNavigate();
-                }}
-              >
-                <Icon name={n.icon} size={16} />
-                <span className="nav-label">{t(n.label)}</span>
-                {n.id === "inbox" && waiting > 0 && (
-                  <span className="nav-count" aria-label={t("{n} waiting for a teammate", { n: waiting })}>
-                    {waiting}
-                  </span>
-                )}
-              </button>
+              <Tooltip key={n.id} label={t(n.label)} side="right" delay={120} disabled={!collapsed} className="tip-block">
+                <button
+                  type="button"
+                  className="nav-item"
+                  aria-current={page === n.id ? "page" : undefined}
+                  onClick={() => {
+                    go(n.id);
+                    onNavigate && onNavigate();
+                  }}
+                >
+                  <Icon name={n.icon} size={16} />
+                  <span className="nav-label">{t(n.label)}</span>
+                  {n.id === "inbox" && waiting > 0 && (
+                    <span className="nav-count" aria-label={t("{n} waiting for a teammate", { n: waiting })}>
+                      {waiting}
+                    </span>
+                  )}
+                </button>
+              </Tooltip>
             ))}
           </div>
         ))}
@@ -269,7 +273,7 @@ function Sidebar({ page, onNavigate, collapsed, onToggle }) {
           </button>
         )}
         <div className="side-row">
-          <UserMenu />
+          <UserMenu collapsed={collapsed} />
           <IconButton icon="help" label={t("Help")} onClick={() => openDialog("help")} />
         </div>
       </div>
@@ -277,12 +281,47 @@ function Sidebar({ page, onNavigate, collapsed, onToggle }) {
   );
 }
 
-function HelpDialog({ onClose }) {
+/**
+ * The pages that have a walkthrough of their own: "?" there shows it first, with the steps to take
+ * inside Telegram played as short animations.
+ */
+const PAGE_GUIDES = {
+  "channels/telegram-business": { kind: "business", title: tk("Set up Telegram Business"), description: tk("What to do in Telegram, step by step."), docs: "telegram-business" },
+  "channels/telegram": { kind: "bot", title: tk("Connect a Telegram bot"), description: tk("What to do in Telegram, step by step."), docs: "telegram" },
+};
+
+function HelpDialog({ onClose, guide: asked, step = 0 }) {
+  const { base, activeAgent } = useWorkspace();
+  const route = useRoute();
+  const guide = PAGE_GUIDES[asked] || PAGE_GUIDES[`${route.page}/${route.id}`] || null;
+  const [general, setGeneral] = useState(false);
+  // The workspace's own bot, so the walkthrough shows its real @username.
+  const channels = useResource(guide?.kind === "business" && activeAgent ? `${base}/agents/${activeAgent.id}/channels` : null);
+  const bot = (channels.data || []).find((c) => c.type === "telegram")?.account_name;
   // Our own support chat, once it has loaded (app.replybek.uz only).
   const [chat, setChat] = useState(() => supportChat());
   useEffect(() => {
     if (!chat) supportChat(() => setChat(true));
   }, [chat]);
+  if (guide && !general) {
+    return (
+      <Dialog title={t(guide.title)} description={t(guide.description)} size="lg" onClose={onClose}>
+        <TelegramGuide steps={guide.kind === "business" ? businessGuide(bot) : botGuide()} start={step} />
+        <div className="row" style={{ gap: 12, justifyContent: "space-between", flexWrap: "wrap", padding: "12px", borderRadius: 10, background: "var(--surface-muted)" }}>
+          <span className="helper" style={{ flex: "1 1 220px" }}>{t("The full guide, with every detail.")}</span>
+          <span className="row" style={{ gap: 8 }}>
+            <Button size="sm" variant="ghost" onClick={() => setGeneral(true)}>
+              {t("How Replybek works")}
+            </Button>
+            <a className="btn btn-secondary btn-sm" href={`https://docs.replybek.uz/${guide.docs}`} target="_blank" rel="noopener noreferrer">
+              <span className="btn-label">{t("Open the guide")}</span>
+              <Icon name="arrowRight" size={14} />
+            </a>
+          </span>
+        </div>
+      </Dialog>
+    );
+  }
   const steps = [
     [t("Create an agent"), t("Name it and describe what it should help with."), () => go("agents")],
     [t("Add knowledge"), t("Websites, files and Q&A. The agent answers only from these."), () => go("knowledge")],
@@ -347,7 +386,6 @@ function HelpDialog({ onClose }) {
           </Button>
         </div>
       )}
-      <p className="helper">{t("Esc closes menus and dialogs. Enter sends a message; Shift+Enter adds a new line.")}</p>
     </Dialog>
   );
 }
@@ -412,7 +450,7 @@ function Dialogs() {
   if (dialog.name === "install") return <InstallDialog onClose={closeDialog} agentId={dialog.agentId} />;
   if (dialog.name === "addKnowledge") return <AddKnowledgeDialog {...dialog} onClose={closeDialog} />;
   if (dialog.name === "search") return <CommandPalette onClose={closeDialog} />;
-  if (dialog.name === "help") return <HelpDialog onClose={closeDialog} />;
+  if (dialog.name === "help") return <HelpDialog onClose={closeDialog} guide={dialog.guide} step={dialog.step} />;
   if (dialog.name === "profile") return <ProfileDialog onClose={closeDialog} />;
   return null;
 }

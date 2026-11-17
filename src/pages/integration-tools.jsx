@@ -9,6 +9,7 @@ import {
   SegmentedControl,
   Button,
   IconButton,
+  SwitchField,
 } from "../ui.jsx";
 
 import { ActionTest, ResponseEditor } from "./integration-panels.jsx";
@@ -261,6 +262,7 @@ function fromTool(tool) {
     progress: tool.progress || "",
     description: tool.description || "",
     kind: tool.kind || "read",
+    channels: tool.channels?.length === 1 ? tool.channels[0] : "all",
     inputs: Object.entries(props).map(([name, def]) => ({
       name,
       type: fromJsonType(def?.type),
@@ -288,6 +290,7 @@ function fromTool(tool) {
       {
         response: tool.response || { type: "json" },
         ...(tool.confirm ? { confirm: tool.confirm } : {}),
+        ...(tool.display ? { display: tool.display } : {}),
       },
       null,
       2,
@@ -341,10 +344,13 @@ function toTool(f) {
     ...(f.progress.trim() ? { progress: f.progress.trim() } : {}),
     description: f.description.trim() || f.name.trim(),
     kind: f.kind,
+    channels: f.channels && f.channels !== "all" ? [f.channels] : undefined,
     input: { ...f.original?.input, type: "object", properties, required },
     request,
     ...(adv.response ? { response: adv.response } : {}),
     ...(adv.confirm ? { confirm: adv.confirm } : {}),
+    // display: show the result as cards with photos in the chat. Taken out here when removed.
+    display: adv.display || undefined,
   };
 }
 
@@ -485,6 +491,18 @@ function ToolEditor({
                 value={f.description}
                 onChange={set("description")}
               />
+              <Field id="te-channels" label={t("Where the agent can use it")} hint={t("For example, an action that runs in your website’s page works only in the website chat.")}>
+                <SegmentedControl
+                  label={t("Where the agent can use it")}
+                  value={f.channels || "all"}
+                  onChange={(v) => setF({ ...f, channels: v })}
+                  options={[
+                    { value: "all", label: t("Everywhere") },
+                    { value: "widget", label: t("Website chat") },
+                    { value: "telegram", label: "Telegram" },
+                  ]}
+                />
+              </Field>
               <Field id="te-kind" label={t("What it does")}>
                 <SegmentedControl
                   label={t("What it does")}
@@ -615,6 +633,21 @@ function ToolEditor({
 
           <Collapsible
             step={4}
+            title={t("Cards in the chat")}
+            desc={(() => {
+              try {
+                return JSON.parse(f.advanced || "{}").display ? t("On") : undefined;
+              } catch {
+                return undefined;
+              }
+            })()}
+            {...sec("cards")}
+          >
+            <CardsEditor value={f.advanced} onChange={(v) => setF({ ...f, advanced: v })} actions={existing} />
+          </Collapsible>
+
+          <Collapsible
+            step={5}
             title={t("Response and confirmation")}
             {...sec("advanced")}
           >
@@ -711,6 +744,167 @@ function ToolEditor({
         </aside>
       </div>
     </Dialog>
+  );
+}
+
+// Languages a button's text can be written in; the chat shows the one it speaks.
+const CARD_LANGS = [
+  ["en", "English"],
+  ["uz", "Oʻzbekcha"],
+  ["ru", "Русский"],
+];
+const asWords = (v) => (typeof v === "string" ? { en: v } : v || {});
+const fromWords = (o) => {
+  const kept = Object.fromEntries(Object.entries(o).filter(([, x]) => x && x.trim()).map(([k, x]) => [k, x.trim()]));
+  return Object.keys(kept).length ? kept : undefined;
+};
+
+/**
+ * Cards in the chat: the result shown as cards with a photo, name and price, as a carousel or a
+ * list, with an optional button under each one (and − 1 + for how many). Edits `display` in the
+ * action's advanced JSON, so the two always agree.
+ */
+function CardsEditor({ value, onChange, actions = [] }) {
+  let config;
+  try {
+    config = JSON.parse(value || "{}");
+  } catch {
+    return <p className="field-hint">{t("Fix the advanced JSON to use visual mapping.")}</p>;
+  }
+  const d = config.display;
+  const write = (display) => {
+    const next = { ...config };
+    if (display) next.display = display;
+    else delete next.display;
+    onChange(JSON.stringify(next, null, 2));
+  };
+  const set = (patch) => write({ ...d, ...patch });
+  const a = d?.action;
+  const setAction = (patch) => set({ action: { ...a, ...patch } });
+  const field = (key, label, placeholder, hint) => (
+    <TextInput
+      id={`cards-${key}`}
+      label={label}
+      hint={hint}
+      optional={!["title"].includes(key)}
+      className="mono"
+      placeholder={placeholder}
+      value={d?.[key] || ""}
+      onChange={(e) => set({ [key]: e.target.value || undefined })}
+    />
+  );
+  const args = Object.entries(a?.args || {}).map(([k, v]) => ({ k, v: String(v) }));
+  const setArgs = (rows) => {
+    const out = {};
+    for (const r of rows) {
+      if (!r.k.trim()) continue;
+      const v = r.v.trim();
+      // A number or true/false is a fixed value; anything else is a field of the item.
+      out[r.k.trim()] = /^-?\d+(\.\d+)?$/.test(v) ? Number(v) : v === "true" ? true : v === "false" ? false : v;
+    }
+    setAction({ args: out });
+  };
+  return (
+    <div className="stack" style={{ gap: 14 }}>
+      <SwitchField
+        id="cards-on"
+        label={t("Show the result as cards")}
+        hint={t("Each item gets a card with its photo, name and price, linked to its page.")}
+        checked={Boolean(d)}
+        onChange={(on) => write(on ? { items: "", title: "title", image: "image", price: "price", url: "url", max: 6 } : null)}
+      />
+      {d && (
+        <>
+          <Field id="cards-layout" label={t("Layout")}>
+            <SegmentedControl
+              label={t("Layout")}
+              value={d.layout || "carousel"}
+              onChange={(v) => set({ layout: v === "carousel" ? undefined : v })}
+              options={[
+                { value: "carousel", label: t("Carousel") },
+                { value: "list", label: t("List") },
+              ]}
+            />
+          </Field>
+          {field("items", t("List in the result"), "products", t("Where the items are in the response. Leave empty when the response is the list, or a single item."))}
+          <div className="grid-2">
+            {field("title", t("Name"), "title")}
+            {field("image", t("Photo"), "image")}
+            {field("price", t("Price"), "price")}
+            <TextInput id="cards-currency" label={t("Currency")} optional placeholder="USD" value={d.currency || ""} maxLength={12} onChange={(e) => set({ currency: e.target.value || undefined })} />
+            {field("url", t("Link"), "url")}
+            {field("subtitle", t("Second line"), "category")}
+          </div>
+          {field("id", t("Item id"), "id", t("Lets the agent know which card the customer means, as in “the first one”."))}
+          <TextInput
+            id="cards-max"
+            label={t("Cards at most")}
+            type="number"
+            min={1}
+            max={10}
+            value={d.max || 6}
+            onChange={(e) => set({ max: Math.min(10, Math.max(1, Number(e.target.value) || 6)) })}
+          />
+          <SwitchField
+            id="cards-button"
+            label={t("A button under each card")}
+            hint={t("One tap runs a change action for that item, such as booking it or adding it to an order. The tap is the customer's confirmation.")}
+            checked={Boolean(a)}
+            onChange={(on) => set({ action: on ? { tool: "", label: {}, args: {} } : undefined })}
+          />
+          {a && (
+            <div className="stack" style={{ gap: 12 }}>
+              <TextInput
+                id="cards-action"
+                label={t("Action it runs")}
+                hint={t("The name of one of this agent's change actions.")}
+                className="mono"
+                list="cards-actions"
+                value={a.tool || ""}
+                onChange={(e) => setAction({ tool: e.target.value.trim() })}
+              />
+              <datalist id="cards-actions">
+                {actions.map((n) => (
+                  <option key={n} value={n} />
+                ))}
+              </datalist>
+              <div className="stack" style={{ gap: 6 }}>
+                <span className="field-label">{t("Button text")}</span>
+                <div className="grid-3">
+                  {CARD_LANGS.map(([code, name]) => (
+                    <TextInput key={code} id={`cards-label-${code}`} label={name} maxLength={40} value={asWords(a.label)[code] || ""} onChange={(e) => setAction({ label: fromWords({ ...asWords(a.label), [code]: e.target.value }) })} />
+                  ))}
+                </div>
+              </div>
+              <div className="stack" style={{ gap: 6 }}>
+                <span className="field-label">{t("After the tap")}</span>
+                <span className="field-hint">{t("Shown on the button once it's done, e.g. Booked.")}</span>
+                <div className="grid-3">
+                  {CARD_LANGS.map(([code, name]) => (
+                    <TextInput key={code} id={`cards-done-${code}`} label={name} maxLength={40} value={asWords(a.done)[code] || ""} onChange={(e) => setAction({ done: fromWords({ ...asWords(a.done), [code]: e.target.value }) })} />
+                  ))}
+                </div>
+              </div>
+              <div className="stack" style={{ gap: 6 }}>
+                <span className="field-label">{t("What the button sends")}</span>
+                <span className="field-hint">{t("For each input of the action: a field of the item (id, title) or a fixed number.")}</span>
+                <KVEditor rows={args} onChange={setArgs} keyLabel={t("Action input")} valueLabel={t("Item field or number")} addLabel={t("Add input")} />
+              </div>
+              <SwitchField
+                id="cards-qty"
+                label={t("Let the customer choose how many")}
+                hint={t("Shows − 1 + above the button; the number goes to the action input below.")}
+                checked={Boolean(a.quantity)}
+                onChange={(on) => setAction({ quantity: on ? "qty" : undefined })}
+              />
+              {a.quantity && (
+                <TextInput id="cards-qty-input" label={t("Quantity input")} className="mono" value={a.quantity} onChange={(e) => setAction({ quantity: e.target.value.trim() || "qty" })} />
+              )}
+            </div>
+          )}
+        </>
+      )}
+    </div>
   );
 }
 

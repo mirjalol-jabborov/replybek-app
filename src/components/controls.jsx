@@ -28,11 +28,20 @@ export const IconButton = React.forwardRef(function IconButton({ icon, label, si
 // ───── Fields ─────
 export const describedBy = (id, hint, error) => [error && id + "-err", hint && id + "-hint"].filter(Boolean).join(" ") || undefined;
 
-export function Field({ id, label, hint, error, optional, layout = "stack", children, tight }) {
-  const labelEl = (
+export function Field({ id, label, hint, error, optional, layout = "stack", children, tight, action }) {
+  const labelOnly = (
     <label className="field-label" htmlFor={id} id={id + "-label"}>
       {label} {optional && <span className="field-opt">{t("(optional)")}</span>}
     </label>
+  );
+  // `action`: a small button at the end of the label row, for things done to the whole field.
+  const labelEl = action ? (
+    <div className="field-head">
+      {labelOnly}
+      {action}
+    </div>
+  ) : (
+    labelOnly
   );
   const err = error && (
     <span className="field-error" id={id + "-err"}>
