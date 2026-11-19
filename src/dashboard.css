@@ -93,6 +93,7 @@
   padding: 0 11px 5px;
   letter-spacing: 0.03em;
 }
+.nav-item.product-switch { text-decoration: none; margin-bottom: 4px; }
 .nav-item {
   height: 37px;
   padding: 0 11px;

@@ -31,6 +31,7 @@ import { Channels } from "./pages/channels.jsx";
 import { InstallDialog } from "./pages/install.jsx";
 import { Integrations } from "./pages/integrations.jsx";
 import { Onboarding } from "./pages/onboarding.jsx";
+import { CRM_APP_URL } from "./pages/crm-link.jsx";
 import { ProfileDialog } from "./pages/profile.jsx";
 
 import { NAV, NAV_GROUPS, WorkspaceBar, AgentWorkflow, CommandPalette } from "./navigation.jsx";
@@ -242,6 +243,15 @@ function Sidebar({ page, onNavigate, collapsed, onToggle }) {
         ))}
       </div>
       <div className="side-foot">
+        {(workspace.products || []).includes("crm") && (
+          <Tooltip label={t("CRM")} side="right" delay={120} disabled={!collapsed} className="tip-block">
+            <a className="nav-item product-switch" href={CRM_APP_URL} target="_blank" rel="noopener noreferrer" aria-label={t("Open Replybek CRM in a new tab")}>
+              <Icon name="layers" size={16} />
+              <span className="nav-label">{t("CRM")}</span>
+              <Icon name="external" size={13} className="muted rail-hide" />
+            </a>
+          </Tooltip>
+        )}
         {usage && limits && (
           <button
             type="button"
