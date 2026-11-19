@@ -7,7 +7,7 @@ import ru from "./locales/ru.js";
 
 export const LANGS = [
   { code: "en", label: "English" },
-  { code: "uz", label: "O‘zbekcha" },
+  { code: "uz", label: "Oʻzbekcha" },
   { code: "ru", label: "Русский" },
 ];
 const DICTS = { en, uz, ru };

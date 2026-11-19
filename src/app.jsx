@@ -3,6 +3,7 @@ import { Icon } from "./icons.jsx";
 import { SessionProvider, useSession } from "./session.jsx";
 import { WorkspaceProvider, useWorkspace } from "./workspace.jsx";
 import { InvitePage, ResetPage } from "./pages/join.jsx";
+import { VerifyEmailPage, VerifyLinkPage } from "./pages/verify.jsx";
 import { useRoute, useResource, go } from "./hooks.js";
 import { TelegramGuide, businessGuide, botGuide } from "./components/telegram-guide.jsx";
 import { getTheme, setTheme } from "./theme.js";
@@ -596,8 +597,11 @@ function Root() {
   // Invitation and password links work signed in or out.
   if (route.page === "invite") return <InvitePage token={route.id} />;
   if (route.page === "reset") return <ResetPage token={route.id} />;
+  // The link in the confirmation email; until the address is confirmed, no workspace opens.
+  if (route.page === "verify" && route.id) return <VerifyLinkPage token={route.id} />;
   if (session.status === "loading") return <Loading label={t("Loading Replybek…")} />;
   if (session.status === "out") return <AuthPage />;
+  if (!session.user.email_verified) return <VerifyEmailPage />;
   if (!session.workspace) return <Loading label={t("No workspace found for this account.")} />;
   return (
     <WorkspaceProvider key={session.workspace.id}>
