@@ -1687,4 +1687,18 @@ export default {
   "This link has expired. Sign in to get a new code.": "Срок действия ссылки истёк. Войдите, чтобы получить новый код.",
   "An account with this email already exists. Sign in instead.": "Аккаунт с этим email уже существует. Войдите в него.",
   "Your email is already confirmed.": "Ваш email уже подтверждён.",
+  // The agent's link to Replybek CRM (pages/crm-link.jsx)
+  "Bookings": "Записи",
+  "Orders": "Заказы",
+  "off": "выключено",
+  "answers": "отвечает",
+  "books": "записывает",
+  "takes orders": "принимает заказы",
+  "Playground only": "только Playground",
+  "Replybek CRM": "Replybek CRM",
+  "Works with Replybek CRM: {modules} · {channels}": "Работает с Replybek CRM: {modules} · {channels}",
+  "every module off": "все модули выключены",
+  "Not connected to the CRM.": "Не подключён к CRM.",
+  "Change in the CRM": "Изменить в CRM",
+  "Connect in the CRM": "Подключить в CRM",
 };
