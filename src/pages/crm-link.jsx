@@ -6,7 +6,7 @@ import { Icon } from "../icons.jsx";
 import { api } from "../api.js";
 
 /** The CRM app: its own address when built with one, else crm.<domain> next to app.<domain>, else the local one. */
-const CRM_APP_URL = (
+export const CRM_APP_URL = (
   import.meta.env.VITE_CRM_APP_URL || (/^app\./.test(window.location.hostname) ? window.location.origin.replace("//app.", "//crm.") : "http://localhost:5192")
 ).replace(/\/$/, "");
 
@@ -38,7 +38,7 @@ export function CrmLink({ base, agent, workspace }) {
       <h2 className="cfg-sec-title">{t("Replybek CRM")}</h2>
       <p className="helper">
         {link.connected ? t("Works with Replybek CRM: {modules} · {channels}", { modules: modules || t("every module off"), channels }) : t("Not connected to the CRM.")}{" "}
-        <a className="link" href={`${CRM_APP_URL}/#/settings`} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+        <a className="link" href={`${CRM_APP_URL}/#/settings`} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
           {link.connected ? t("Change in the CRM") : t("Connect in the CRM")}
           <Icon name="arrowRight" size={13} />
         </a>

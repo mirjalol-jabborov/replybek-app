@@ -3,6 +3,8 @@
 const p = (one, few, many) => ({ one, few, many, other: few });
 
 export default {
+  "CRM": "CRM",
+  "Open Replybek CRM in a new tab": "Открыть Replybek CRM в новой вкладке",
   "{count} selected": "Выбрано: {count}",
   "Public API pages and published Postman documentation are supported. Collections show an endpoint list before generation.": "Поддерживаются открытые страницы API и опубликованная документация Postman. Перед созданием показывается список эндпоинтов.",
   "Discovered endpoints": "Найденные эндпоинты",

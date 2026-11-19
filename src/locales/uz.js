@@ -1,5 +1,7 @@
 // Uzbek (Latin). Keys are the English texts; missing keys fall back to English.
 export default {
+  "CRM": "CRM",
+  "Open Replybek CRM in a new tab": "Replybek CRMni yangi oynada ochish",
   "{count} selected": "{count} ta tanlangan",
   "Public API pages and published Postman documentation are supported. Collections show an endpoint list before generation.": "Ochiq API sahifalari va e’lon qilingan Postman hujjatlari qo‘llab-quvvatlanadi. Yaratishdan oldin endpointlar ro‘yxati ko‘rsatiladi.",
   "Discovered endpoints": "Topilgan endpointlar",
