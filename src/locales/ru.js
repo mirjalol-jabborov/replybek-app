@@ -3,6 +3,12 @@
 const p = (one, few, many) => ({ one, few, many, other: few });
 
 export default {
+  "{name} uses Replybek CRM.": "{name} работает в Replybek CRM.",
+  "The AI agent isn't added to this business yet. Add it here, or keep working in the CRM.": "ИИ-агент пока не подключён к этому бизнесу. Подключите его здесь или продолжайте работать в CRM.",
+  "The AI agent isn't added to this business. The owner can add it.": "ИИ-агент не подключён к этому бизнесу. Подключить его может владелец.",
+  "Open the CRM": "Открыть CRM",
+  "Add the AI agent": "Подключить ИИ-агента",
+  "This didn't work. Try again.": "Не получилось. Попробуйте ещё раз.",
   "CRM": "CRM",
   "Open Replybek CRM in a new tab": "Открыть Replybek CRM в новой вкладке",
   "{count} selected": "Выбрано: {count}",

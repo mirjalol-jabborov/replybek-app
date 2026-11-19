@@ -16,7 +16,7 @@ const nextMonth = () => {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1, 12));
 };
 import { useModal, Confirm } from "./components/overlay.jsx";
-import { limitMessage, setPaymentRequiredHandler, trialMessage } from "./api.js";
+import { api, limitMessage, setPaymentRequiredHandler, trialMessage } from "./api.js";
 import { Loading } from "./pages/shared.jsx";
 import { supportChat, openSupportChat } from "./support.js";
 import { AuthPage } from "./pages/auth.jsx";
@@ -613,6 +613,8 @@ function Root() {
   if (session.status === "out") return <AuthPage />;
   if (!session.user.email_verified) return <VerifyEmailPage />;
   if (!session.workspace) return <Loading label={t("No workspace found for this account.")} />;
+  // A business that uses only the CRM: no agent pages here (the API would refuse every call), a way out instead.
+  if (Array.isArray(session.workspace.products) && !session.workspace.products.includes("agent")) return <CrmOnlyWorkspace session={session} />;
   return (
     <WorkspaceProvider key={session.workspace.id}>
       <Workspace />
@@ -630,5 +632,61 @@ export function App() {
         <Root key={lang} />
       </SessionProvider>
     </ToastProvider>
+  );
+}
+
+/** The AI agent app opened on a business that has only the CRM: say so, open the CRM, let the owner add the agent, or switch. */
+function CrmOnlyWorkspace({ session }) {
+  const w = session.workspace;
+  const owner = w.role === "owner";
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const others = session.workspaces.filter((x) => x.id !== w.id);
+  const add = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      const res = await api(`/w/${w.id}/products`, { method: "POST", body: { add: "agent", origin: window.location.origin } });
+      if (res?.url) window.location.href = res.url;
+      else window.location.reload();
+    } catch (e) {
+      setError(e.message || t("This didn't work. Try again."));
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="crm-only">
+      <div className="crm-only-card stack" style={{ gap: 16 }}>
+        <BrandMark size={36} />
+        <h1 className="crm-only-title">{t("{name} uses Replybek CRM.", { name: w.name })}</h1>
+        <p className="muted">{owner ? t("The AI agent isn't added to this business yet. Add it here, or keep working in the CRM.") : t("The AI agent isn't added to this business. The owner can add it.")}</p>
+        <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
+          <a className="btn btn-primary" href={CRM_APP_URL} target="_blank" rel="noopener noreferrer">
+            {t("Open the CRM")}
+            <Icon name="external" size={14} />
+          </a>
+          {owner && (
+            <Button onClick={add} loading={busy}>
+              {t("Add the AI agent")}
+            </Button>
+          )}
+        </div>
+        {error && <p className="helper" style={{ color: "var(--danger, #B42A1C)" }}>{error}</p>}
+        {others.length > 0 && (
+          <div className="stack" style={{ gap: 6, marginTop: 8 }}>
+            <span className="text-sm muted">{t("Switch workspace")}</span>
+            {others.map((x) => (
+              <button key={x.id} type="button" className="crm-only-ws" onClick={() => session.setWorkspace(x.id)}>
+                <span className="strong">{x.name}</span>
+                <span className="muted text-sm">{(x.products || []).includes("agent") ? t("AI agent") : t("CRM")}</span>
+              </button>
+            ))}
+          </div>
+        )}
+        <button type="button" className="link text-sm" style={{ alignSelf: "flex-start" }} onClick={session.signOut}>
+          {t("Sign out")}
+        </button>
+      </div>
+    </div>
   );
 }
