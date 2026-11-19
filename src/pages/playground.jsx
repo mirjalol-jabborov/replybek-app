@@ -4,6 +4,7 @@ import { Icon } from "../icons.jsx";
 import { api } from "../api.js";
 import { questionLists, questionsFor } from "../suggestions.js";
 import { SuggestionEditor } from "./suggestion-editor.jsx";
+import { CrmLink } from "./crm-link.jsx";
 import { InstructionsField } from "../components/markdown-editor.jsx";
 import { WIDGET_LANGUAGES, languageLabel, languageOptions, orderedLanguages, isAuto } from "../widget-languages.js";
 import { useWorkspace } from "../workspace.jsx";
@@ -372,6 +373,7 @@ export function Playground() {
                   </Button>
                 )}
               </div>
+              <CrmLink base={base} agent={agent} workspace={workspace} />
               <div className="cfg-sec">
                 <h2 className="cfg-sec-title">{t("Identity")}</h2>
                 <TextInput id="pg-name" label={t("Agent name")} value={draft.name} onChange={set("name")} error={errors.name} maxLength={80} disabled={!isAdmin} />

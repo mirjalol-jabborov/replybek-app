@@ -1677,4 +1677,18 @@ export default {
   "This link has expired. Sign in to get a new code.": "Havolaning muddati tugadi. Yangi kod olish uchun tizimga kiring.",
   "An account with this email already exists. Sign in instead.": "Bu email bilan hisob allaqachon mavjud. Tizimga kiring.",
   "Your email is already confirmed.": "Emailingiz allaqachon tasdiqlangan.",
+  // The agent's link to Replybek CRM (pages/crm-link.jsx)
+  "Bookings": "Bronlar",
+  "Orders": "Buyurtmalar",
+  "off": "oʻchiq",
+  "answers": "javob beradi",
+  "books": "bron qiladi",
+  "takes orders": "buyurtma oladi",
+  "Playground only": "faqat Playground",
+  "Replybek CRM": "Replybek CRM",
+  "Works with Replybek CRM: {modules} · {channels}": "Replybek CRM bilan ishlaydi: {modules} · {channels}",
+  "every module off": "barcha modullar oʻchiq",
+  "Not connected to the CRM.": "CRMga ulanmagan.",
+  "Change in the CRM": "CRMda oʻzgartirish",
+  "Connect in the CRM": "CRMda ulash",
 };
