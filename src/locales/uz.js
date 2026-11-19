@@ -1,5 +1,11 @@
 // Uzbek (Latin). Keys are the English texts; missing keys fall back to English.
 export default {
+  "{name} uses Replybek CRM.": "{name} Replybek CRMdan foydalanadi.",
+  "The AI agent isn't added to this business yet. Add it here, or keep working in the CRM.": "Bu biznesga AI agent hali qoʻshilmagan. Uni shu yerda qoʻshing yoki CRMda ishlashda davom eting.",
+  "The AI agent isn't added to this business. The owner can add it.": "Bu biznesga AI agent qoʻshilmagan. Uni ish maydoni egasi qoʻsha oladi.",
+  "Open the CRM": "CRMni ochish",
+  "Add the AI agent": "AI agentni qoʻshish",
+  "This didn't work. Try again.": "Bajarilmadi. Qayta urinib koʻring.",
   "CRM": "CRM",
   "Open Replybek CRM in a new tab": "Replybek CRMni yangi oynada ochish",
   "{count} selected": "{count} ta tanlangan",
